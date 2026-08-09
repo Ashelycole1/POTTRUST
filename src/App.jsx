@@ -7,6 +7,7 @@ import { MemberView } from './views/MemberView';
 import { TreasurerView } from './views/TreasurerView';
 import { ChairpersonView } from './views/ChairpersonView';
 import { AdminOverview, AdminGroupsView } from './views/AdminView';
+import { MembersView } from './views/MembersView';
 import { LoansView } from './views/LoansView';
 import { TrustScoreView } from './views/TrustScoreView';
 import { ActivityView } from './views/ActivityView';
@@ -45,7 +46,7 @@ function AppShell({ role, setRole }) {
 
             <Routes>
               <Route path="/"           element={renderDashboard()} />
-              <Route path="/members"    element={<div className="section"><h2>Members</h2><p>Member list routing.</p></div>} />
+              <Route path="/members"    element={<MembersView />} />
               <Route path="/loans"      element={<LoansView />} />
               <Route path="/trust"      element={<TrustScoreView />} />
               <Route path="/statements" element={<StatementsView role={role} />} />
