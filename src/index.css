@@ -78,29 +78,34 @@ button { font-family: inherit; cursor: pointer; }
 /* ---------- Carousel ---------- */
 .carousel-wrap {
   padding: 4px 0 6px;
-  /* Clip the carousel so its overflow never leaks into the page */
   overflow: hidden;
-  /* Allow internal horizontal scroll */
   position: relative;
   width: 100%;
 }
 .carousel {
-  display: flex; gap: 14px;
+  display: flex;
+  gap: 0;
   overflow-x: scroll;
   overflow-y: hidden;
-  padding: 4px 20px 6px;
   scroll-snap-type: x mandatory;
   -ms-overflow-style: none;
   scrollbar-width: none;
-  /* Crucial: prevent the flex children from widening the page */
   max-width: 100%;
   width: 100%;
 }
 .carousel::-webkit-scrollbar { display: none; }
 .card {
-  scroll-snap-align: start; flex: 0 0 auto; width: min(84vw, 320px);
-  border-radius: var(--radius); padding: 22px 22px 18px;
-  position: relative; overflow: hidden; border: 1px solid var(--line);
+  /* Each card fills exactly the full visible width of the carousel */
+  scroll-snap-align: start;
+  flex: 0 0 100%;
+  width: 100%;
+  padding: 22px 24px 18px;
+  border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  /* Inner margin via box so cards don't touch edge on mobile */
+  box-sizing: border-box;
 }
 .card .weave { position: absolute; top: 0; left: 0; }
 .card-pot { background: linear-gradient(160deg, var(--green) 0%, var(--green-deep) 100%); }
@@ -204,6 +209,15 @@ button { font-family: inherit; cursor: pointer; }
 /* ---------- Desktop & Tablet Responsive ---------- */
 .desktop-side { display: none; }
 
+/* Audit log always visible on mobile as a section below tabs */
+.audit-side {
+  padding: 20px;
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+}
+.audit-side h3 { font-size: 15px; font-weight: 700; margin: 0 0 4px; font-family: 'Sora'; }
+.audit-side .card-meta { color: var(--text-faint); font-size: 12px; margin-bottom: 16px; }
+
 @media (min-width: 600px) {
     .quick-grid { grid-template-columns: repeat(4, 1fr); max-width: 520px; }
 }
@@ -237,10 +251,19 @@ button { font-family: inherit; cursor: pointer; }
   .dots { display: none; }
   .audit-side {
     border-left: 1px solid var(--line);
-    padding: 26px 22px; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    padding: 26px 22px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    /* Always visible on desktop */
+    display: flex;
+    flex-direction: column;
   }
   .audit-side h3 { font-size: 14px; margin: 0 0 4px; }
   .audit-side .card-meta { margin-bottom: 16px; }
+  /* Hide the in-content audit section on desktop since the sticky panel is there */
+  .audit-inline { display: none; }
   .greeting { padding-left: 0; }
 }
 

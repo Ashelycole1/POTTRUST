@@ -64,8 +64,16 @@ function App() {
               <Route path="/users" element={<div className="section"><h2>Users</h2><p>User management.</p></div>} />
               <Route path="/settings" element={<div className="section"><h2>Settings</h2><p>Settings panel.</p></div>} />
             </Routes>
+
+            {/* Audit log visible on mobile as an inline section, hidden on desktop */}
+            <div className="audit-side audit-inline">
+              <h3>Immutable audit log</h3>
+              <div className="card-meta">Every entry is timestamped and permanent</div>
+              <AuditLog entries={logEntries} />
+            </div>
           </div>
 
+          {/* Desktop-only sticky audit panel */}
           <aside className="audit-side">
             <h3>Immutable audit log</h3>
             <div className="card-meta">Every entry is timestamped and permanent</div>
