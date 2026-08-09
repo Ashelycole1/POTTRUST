@@ -1,16 +1,54 @@
-# React + Vite
+# PotTrust 
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+PotTrust is a comprehensive, role-based front-end application built for managing group savings (SACCOs). It provides a beautiful, modern, and responsive interface designed to handle group pots, member contributions, loans, trust scores, and an immutable audit log.
 
-Currently, two official plugins are available:
+## Tech Stack
+- **Framework:** React + Vite
+- **Styling:** Vanilla CSS (Design tokens, custom gradients, CSS Grid/Flexbox)
+- **Icons:** Lucide React
+- **Routing:** React Router DOM
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
+- **Responsive Layout:** 
+  - **Mobile:** Card carousel, sticky bottom navigation.
+  - **Desktop:** Persistent sidebar, expanded grid layout, and a sticky audit log panel.
+- **Role-Based Access Control (RBAC):**
+  - **Standard Member:** View the pot, personal contributions, active loans, and request new loans.
+  - **Group Treasurer:** Verify and review payment proofs in a dedicated Review Queue.
+  - **Group Chairperson:** Approve/reject loan requests and issue fines to members.
+  - **System Admin:** Cross-group oversight, managing users, and platform configuration.
+- **Dynamic Theming & UI Tokens:** Uses a centralized CSS variable system for consistent coloring (Paid = Green, Pending = Gold, Overdue = Coral).
+- **Zero Emojis:** Professional and premium feel using scalable SVG icons.
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Prerequisites
+Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
 
-## Expanding the Oxlint configuration
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Ashelycole1/POTTRUST.git
+   cd POTTRUST
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+4. Open `http://localhost:5173` in your browser.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Deployment
+
+This project is configured for seamless deployment on **Vercel**. 
+
+1. Ensure all your files are at the root of the repository.
+2. Push your code to GitHub.
+3. Import your repository into Vercel.
+4. Vercel will automatically detect **Vite**, run `npm run build`, and serve the `dist` directory. Client-side routing is handled via the included `vercel.json` file.
+
+## Design Reference
+For comprehensive details on the typography, colors, and layout metrics used across this app, refer to the included `design_1.md` specification file.
