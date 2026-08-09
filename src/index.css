@@ -77,9 +77,15 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ---------- Carousel ---------- */
 .carousel-wrap {
-  padding: 4px 0 6px;
+  padding: 4px 20px 6px;
   overflow: hidden;
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+/* Container that limits card width and centers it */
+.carousel-inner {
+  max-width: 560px;
   width: 100%;
 }
 .carousel {
@@ -95,16 +101,15 @@ button { font-family: inherit; cursor: pointer; }
 }
 .carousel::-webkit-scrollbar { display: none; }
 .card {
-  /* Each card fills exactly the full visible width of the carousel */
   scroll-snap-align: start;
   flex: 0 0 100%;
   width: 100%;
-  padding: 22px 24px 18px;
+  /* Compact vertical padding — cards should feel like a summary, not a banner */
+  padding: 18px 22px 14px;
   border-radius: var(--radius);
   position: relative;
   overflow: hidden;
   border: 1px solid var(--line);
-  /* Inner margin via box so cards don't touch edge on mobile */
   box-sizing: border-box;
 }
 .card .weave { position: absolute; top: 0; left: 0; }
@@ -243,15 +248,26 @@ button { font-family: inherit; cursor: pointer; }
   }
   .side-link.active { background: var(--surface); color: var(--text); }
   .side-link svg { width: 18px; height: 18px; }
-  .main-col { min-width: 0; }
-  .topbar { padding-top: 26px; }
-  .carousel { padding-left: 0; padding-right: 6px; }
-  .tabs { padding-left: 0; }
-  .section { padding-left: 0; padding-right: 24px; }
+
+  /* Give main-col breathing room from both sidebars */
+  .main-col {
+    min-width: 0;
+    padding: 0 40px;
+  }
+
+  /* Center-constrain content within main-col */
+  .topbar { padding-top: 26px; padding-left: 0; padding-right: 0; }
+  .greeting { padding-left: 0; padding-right: 0; }
+  .tabs { padding-left: 0; padding-right: 0; }
+  .section { padding-left: 0; padding-right: 0; }
+
+  /* Carousel: constrain card width so it doesn't stretch wall-to-wall */
+  .carousel-wrap { padding-left: 0; padding-right: 0; max-width: 600px; }
+  .carousel { padding-left: 0; padding-right: 0; }
+
   .dots { display: none; }
   /* audit-side used only on the /activity page — no sticky panel */
   .audit-inline { display: none; }
-  .greeting { padding-left: 0; }
 }
 
 /* Auth Login Screen */
