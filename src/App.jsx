@@ -6,7 +6,7 @@ import { AuthView } from './views/AuthView';
 import { MemberView } from './views/MemberView';
 import { TreasurerView } from './views/TreasurerView';
 import { ChairpersonView } from './views/ChairpersonView';
-import { AdminView } from './views/AdminView';
+import { AdminOverview, AdminGroupsView } from './views/AdminView';
 import { LoansView } from './views/LoansView';
 import { TrustScoreView } from './views/TrustScoreView';
 import { ActivityView } from './views/ActivityView';
@@ -19,7 +19,7 @@ function AppShell({ role, setRole }) {
     switch (role) {
       case 'Treasurer':   return <TreasurerView />;
       case 'Chairperson': return <ChairpersonView />;
-      case 'Admin':       return <AdminView />;
+      case 'Admin':       return <AdminOverview />;
       case 'Member':
       default:            return <MemberView />;
     }
@@ -49,8 +49,8 @@ function AppShell({ role, setRole }) {
               <Route path="/trust"      element={<TrustScoreView />} />
               <Route path="/statements" element={<div className="section"><h2>Statements</h2><p>Financial statements.</p></div>} />
               <Route path="/activity"   element={<ActivityView />} />
-              <Route path="/groups"     element={role === 'Admin' ? renderDashboard() : <Navigate to="/" />} />
-              <Route path="/users"      element={<div className="section"><h2>Users</h2><p>User management.</p></div>} />
+              <Route path="/groups"     element={role === 'Admin' ? <AdminGroupsView /> : <Navigate to="/" />} />
+              <Route path="/users"      element={<div className="section"><h2>Global Users</h2><p>User management interface.</p></div>} />
               <Route path="/settings"   element={<SettingsView role={role} />} />
             </Routes>
           </div>

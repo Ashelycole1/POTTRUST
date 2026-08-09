@@ -16,10 +16,10 @@ export const DesktopSidebar = ({ role }) => {
     ];
     if (role === 'Admin') {
       return [
-        { id: 'groups',   icon: Users,     label: 'Groups',           path: '/groups' },
-        { id: 'users',    icon: Users,     label: 'Users',            path: '/users' },
-        { id: 'activity', icon: Activity,  label: 'Activity',         path: '/activity' },
-        { id: 'settings', icon: Settings,  label: 'Platform Settings', path: '/settings' },
+        { id: 'dashboard', icon: Home,     label: 'Platform Overview', path: '/' },
+        { id: 'groups',    icon: Users,    label: 'All Groups',        path: '/groups' },
+        { id: 'users',     icon: Users,    label: 'Global Users',      path: '/users' },
+        { id: 'settings',  icon: Settings, label: 'Platform Settings', path: '/settings' },
       ];
     }
     return [...base, { id: 'settings', icon: Settings, label: 'Settings', path: '/settings' }];

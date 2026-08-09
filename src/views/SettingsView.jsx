@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   Camera, Save, Users, DollarSign, Bell, Shield,
-  MapPin, Phone, Mail, Globe, ChevronRight, Trash2, UserPlus
+  MapPin, Phone, Mail, Globe, ChevronRight, Trash2, UserPlus, Settings
 } from 'lucide-react';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -93,10 +93,14 @@ const TABS = [
 ];
 
 // ── sections ──────────────────────────────────────────────────────────────────
-const ProfileSettings = () => {
+const ProfileSettings = ({ groupName }) => {
   const [saved, setSaved]         = useState(false);
-  const [name, setName]           = useState('Katonga Traders SACCO');
-  const [description, setDesc]    = useState('A registered savings and credit cooperative serving Katonga market traders since 2018.');
+  const [name, setName]           = useState(groupName || 'Katonga Traders SACCO');
+  const [description, setDesc]    = useState('A registered savings and credit cooperative serving market traders.');
+  
+  React.useEffect(() => {
+    if (groupName) setName(groupName);
+  }, [groupName]);
   const [location, setLocation]   = useState('Katonga Road, Kampala');
   const [phone, setPhone]         = useState('+256 700 123456');
   const [email, setEmail]         = useState('katonga.sacco@gmail.com');
@@ -411,6 +415,13 @@ const NotificationsSettings = () => {
 
 // ── main view ─────────────────────────────────────────────────────────────────
 export const SettingsView = ({ role }) => {
+  const ADMIN_GROUPS = [
+    'Katonga Traders SACCO',
+    'Bwaise Women\'s Group',
+    'Kisekka Mechanics'
+  ];
+  const [selectedGroup, setSelectedGroup] = useState(ADMIN_GROUPS[0]);
+
   const getTabsForRole = () => {
     switch (role) {
       case 'Admin':
@@ -434,15 +445,33 @@ export const SettingsView = ({ role }) => {
       case 'fines':         return <FinesSettings />;
       case 'members':       return <MembersSettings />;
       case 'notifications': return <NotificationsSettings />;
-      default:              return <ProfileSettings />;
+      default:              return <ProfileSettings groupName={role === 'Admin' ? selectedGroup : 'Katonga Traders SACCO'} />;
     }
   };
 
   return (
     <>
-      <div className="greeting">
-        <p className="hello">Group administration</p>
-        <p className="name">Settings</p>
+      <div className="greeting" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <p className="hello">{role === 'Admin' ? 'Platform administration' : 'Group administration'}</p>
+          <p className="name">Settings</p>
+        </div>
+        
+        {role === 'Admin' && (
+          <div style={{ marginTop: 10 }}>
+             <select 
+                value={selectedGroup} 
+                onChange={(e) => setSelectedGroup(e.target.value)}
+                style={{ 
+                  background: 'var(--surface)', border: '1px solid var(--line)', 
+                  borderRadius: 10, padding: '8px 12px', fontSize: 13, 
+                  fontWeight: 600, color: 'var(--text)', cursor: 'pointer', outline: 'none'
+                }}
+             >
+                {ADMIN_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
+             </select>
+          </div>
+        )}
       </div>
 
       {/* Vertical tab list on desktop, horizontal scroll on mobile */}
