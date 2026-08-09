@@ -19,13 +19,14 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; overflow-x: hidden; }
 body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  position: relative;
 }
 h1, h2, h3, .display { font-family: 'Sora', sans-serif; }
 .num, .mono { font-family: 'IBM Plex Mono', monospace; }
@@ -46,6 +47,7 @@ button { font-family: inherit; cursor: pointer; }
 /* ---------- Layout ---------- */
 .shell { max-width: 1240px; margin: 0 auto; padding: 0 0 96px; }
 .app-grid { display: grid; grid-template-columns: 1fr; }
+.main-col { min-width: 0; }
 
 /* ---------- Topbar ---------- */
 .topbar { display: flex; align-items: center; justify-content: space-between; padding: 22px 20px 8px; }
@@ -74,11 +76,25 @@ button { font-family: inherit; cursor: pointer; }
 .greeting .name { font-family: 'Sora'; font-weight: 700; font-size: 21px; margin: 0; }
 
 /* ---------- Carousel ---------- */
-.carousel-wrap { padding: 4px 0 6px; }
+.carousel-wrap {
+  padding: 4px 0 6px;
+  /* Clip the carousel so its overflow never leaks into the page */
+  overflow: hidden;
+  /* Allow internal horizontal scroll */
+  position: relative;
+  width: 100%;
+}
 .carousel {
-  display: flex; gap: 14px; overflow-x: auto;
-  padding: 4px 20px 6px; scroll-snap-type: x mandatory;
-  -ms-overflow-style: none; scrollbar-width: none;
+  display: flex; gap: 14px;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  padding: 4px 20px 6px;
+  scroll-snap-type: x mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  /* Crucial: prevent the flex children from widening the page */
+  max-width: 100%;
+  width: 100%;
 }
 .carousel::-webkit-scrollbar { display: none; }
 .card {
@@ -111,7 +127,8 @@ button { font-family: inherit; cursor: pointer; }
 .dots span.active { background: var(--green); width: 16px; border-radius: 4px; }
 
 /* ---------- Tabs ---------- */
-.tabs { display: flex; gap: 26px; padding: 4px 20px 14px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs { display: flex; gap: 26px; padding: 4px 20px 14px; border-bottom: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none; }
+.tabs::-webkit-scrollbar { display: none; }
 .tab {
   background: none; border: none; color: var(--text-faint);
   font-weight: 600; font-size: 14.5px; padding: 6px 2px 12px;
