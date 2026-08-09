@@ -11,6 +11,7 @@ import { LoansView } from './views/LoansView';
 import { TrustScoreView } from './views/TrustScoreView';
 import { ActivityView } from './views/ActivityView';
 import { SettingsView } from './views/SettingsView';
+import { StatementsView } from './views/StatementsView';
 import { UploadProofModal } from './components/UploadProofModal';
 import { AppProvider } from './context/AppContext';
 
@@ -47,7 +48,7 @@ function AppShell({ role, setRole }) {
               <Route path="/members"    element={<div className="section"><h2>Members</h2><p>Member list routing.</p></div>} />
               <Route path="/loans"      element={<LoansView />} />
               <Route path="/trust"      element={<TrustScoreView />} />
-              <Route path="/statements" element={<div className="section"><h2>Statements</h2><p>Financial statements.</p></div>} />
+              <Route path="/statements" element={<StatementsView role={role} />} />
               <Route path="/activity"   element={<ActivityView />} />
               <Route path="/groups"     element={role === 'Admin' ? <AdminGroupsView /> : <Navigate to="/" />} />
               <Route path="/users"      element={<div className="section"><h2>Global Users</h2><p>User management interface.</p></div>} />

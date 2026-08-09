@@ -1,9 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TrendingUp, FileText, Plus, Upload, Download, Calendar } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const PotCard = () => {
   const { groupPot } = useApp();
+  const navigate = useNavigate();
   return (
     <div className="card card-pot">
       <div className="weave"></div>
@@ -15,13 +17,15 @@ export const PotCard = () => {
       <div className="card-actions">
         <button><Download size={18} /><span>Contribute</span></button>
         <div className="divider"></div>
-        <button><FileText size={18} /><span>Statement</span></button>
+        <button onClick={() => navigate('/statements')}><FileText size={18} /><span>Statement</span></button>
       </div>
     </div>
   );
 };
 
-export const ScoreCard = () => (
+export const ScoreCard = () => {
+  const navigate = useNavigate();
+  return (
   <div className="card card-score">
     <div className="weave"></div>
     <svg className="score-ring" viewBox="0 0 54 54">
@@ -34,12 +38,13 @@ export const ScoreCard = () => (
     <div className="card-value" style={{ fontSize: '22px' }}>Very good <small>tier</small></div>
     <div className="card-meta">On-time streak: 14 cycles</div>
     <div className="card-actions">
-      <button><TrendingUp size={18} /><span>Breakdown</span></button>
+      <button onClick={() => navigate('/trust')}><TrendingUp size={18} /><span>Breakdown</span></button>
       <div className="divider"></div>
       <button><Plus size={18} /><span>Improve it</span></button>
     </div>
   </div>
-);
+  );
+};
 
 export const ContribCard = () => {
   const { memberContrib, setProofModalOpen } = useApp();
@@ -69,7 +74,9 @@ export const ContribCard = () => {
   );
 };
 
-export const LoanCard = () => (
+export const LoanCard = () => {
+  const navigate = useNavigate();
+  return (
   <div className="card card-loan">
     <div className="card-label">Active loan</div>
     <div className="card-value" style={{ fontFamily: 'IBM Plex Mono' }}>UGX 620,000</div>
@@ -77,7 +84,8 @@ export const LoanCard = () => (
     <div className="card-actions">
       <button><Download size={18} /><span>Repay</span></button>
       <div className="divider"></div>
-      <button><Calendar size={18} /><span>Schedule</span></button>
+      <button onClick={() => navigate('/loans')}><Calendar size={18} /><span>Schedule</span></button>
     </div>
   </div>
-);
+  );
+};
