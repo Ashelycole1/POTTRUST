@@ -227,7 +227,7 @@ button { font-family: inherit; cursor: pointer; }
   .bottom-nav { display: none; }
   .shell { padding-bottom: 40px; }
   .app-grid {
-    grid-template-columns: 230px 1fr 300px;
+    grid-template-columns: 230px 1fr;
     gap: 0; align-items: start; max-width: 1240px; margin: 0 auto;
   }
   .desktop-side {
@@ -249,20 +249,7 @@ button { font-family: inherit; cursor: pointer; }
   .tabs { padding-left: 0; }
   .section { padding-left: 0; padding-right: 24px; }
   .dots { display: none; }
-  .audit-side {
-    border-left: 1px solid var(--line);
-    padding: 26px 22px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-    /* Always visible on desktop */
-    display: flex;
-    flex-direction: column;
-  }
-  .audit-side h3 { font-size: 14px; margin: 0 0 4px; }
-  .audit-side .card-meta { margin-bottom: 16px; }
-  /* Hide the in-content audit section on desktop since the sticky panel is there */
+  /* audit-side used only on the /activity page — no sticky panel */
   .audit-inline { display: none; }
   .greeting { padding-left: 0; }
 }
