@@ -7,6 +7,8 @@ import { MemberView } from './views/MemberView';
 import { TreasurerView } from './views/TreasurerView';
 import { ChairpersonView } from './views/ChairpersonView';
 import { AdminView } from './views/AdminView';
+import { LoansView } from './views/LoansView';
+import { TrustScoreView } from './views/TrustScoreView';
 import { AuditLog } from './components/AuditLog';
 
 const logEntries = [
@@ -57,8 +59,8 @@ function App() {
             <Routes>
               <Route path="/" element={renderDashboard()} />
               <Route path="/members" element={<div className="section"><h2>Members</h2><p>Member list routing.</p></div>} />
-              <Route path="/loans" element={<div className="section"><h2>Loans</h2><p>Loan book routing.</p></div>} />
-              <Route path="/trust" element={<div className="section"><h2>Trust Score</h2><p>Trust insights.</p></div>} />
+              <Route path="/loans" element={<LoansView />} />
+              <Route path="/trust" element={<TrustScoreView />} />
               <Route path="/statements" element={<div className="section"><h2>Statements</h2><p>Financial statements.</p></div>} />
               <Route path="/groups" element={role === 'Admin' ? renderDashboard() : <Navigate to="/" />} />
               <Route path="/users" element={<div className="section"><h2>Users</h2><p>User management.</p></div>} />
