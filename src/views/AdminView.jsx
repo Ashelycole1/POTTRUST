@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MemberRow } from '../components/MemberRow';
-import { Activity, ShieldCheck, TrendingUp, Users, DollarSign, Database } from 'lucide-react';
+import { Activity, ShieldCheck, TrendingUp, Users, DollarSign, Database, Plus, X } from 'lucide-react';
 
 const MetricCard = ({ icon: Icon, label, value, trend, trendColor }) => (
   <div style={{
@@ -65,7 +65,90 @@ export const AdminOverview = () => {
   );
 };
 
+const CreateGroupModal = ({ isOpen, onClose }) => {
+  const [step, setStep] = useState(1);
+  const [name, setName] = useState('');
+
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 100,
+      background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+    }}>
+      <div style={{
+        background: 'var(--bg-raised)', border: '1px solid var(--line)',
+        borderRadius: 24, width: '100%', maxWidth: 440,
+        padding: '32px 28px', position: 'relative'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <div>
+            <h2 style={{ fontFamily: 'Sora', fontSize: 18, fontWeight: 700, margin: 0 }}>
+              {step === 1 ? 'Create New Group' : 'Group Created'}
+            </h2>
+            <p style={{ color: 'var(--text-faint)', fontSize: 12.5, margin: '4px 0 0' }}>
+              {step === 1 ? 'Set up a new workspace for a SACCO' : 'The workspace is ready'}
+            </p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', padding: 4, cursor: 'pointer' }}>
+            <X size={22} />
+          </button>
+        </div>
+
+        {step === 1 && (
+          <>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Group Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="e.g. Masaka Traders SACCO"
+                style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14, fontFamily: 'Inter', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Chairperson Email (Invite)</label>
+              <input
+                type="email"
+                placeholder="chairperson@example.com"
+                style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14, fontFamily: 'Inter', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <button 
+              onClick={() => { if(name) setStep(2); }} 
+              style={{ width: '100%', background: 'var(--green)', color: '#08251d', border: 'none', borderRadius: 12, padding: '14px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+            >
+              Create Group
+            </button>
+          </>
+        )}
+
+        {step === 2 && (
+          <div style={{ textAlign: 'center', padding: '10px 0 0' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--green-deep)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <Database size={28} color="var(--green)" />
+            </div>
+            <h3 style={{ fontFamily: 'Sora', fontWeight: 700, fontSize: 18, margin: '0 0 8px' }}>{name}</h3>
+            <p style={{ color: 'var(--text-dim)', fontSize: 13.5, margin: '0 0 28px', lineHeight: 1.5 }}>
+              The group has been provisioned successfully. An invite link has been sent to the designated Chairperson to complete onboarding.
+            </p>
+            <button onClick={onClose} style={{ width: '100%', background: 'var(--green)', color: '#08251d', border: 'none', borderRadius: 12, padding: '14px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              Done
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const AdminGroupsView = () => {
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <>
       <div className="greeting">
@@ -78,6 +161,12 @@ export const AdminGroupsView = () => {
           <h3>1,204 Active Groups</h3>
           <div style={{ display: 'flex', gap: 8 }}>
              <input type="text" placeholder="Search..." style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: '6px 12px', fontSize: 13, color: 'var(--text)', outline: 'none' }} />
+             <button 
+               onClick={() => setModalOpen(true)}
+               style={{ background: 'var(--green)', color: '#08251d', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+             >
+               <Plus size={16} /> New Group
+             </button>
           </div>
         </div>
         
@@ -120,6 +209,8 @@ export const AdminGroupsView = () => {
           />
         </div>
       </div>
+
+      <CreateGroupModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );
 };
