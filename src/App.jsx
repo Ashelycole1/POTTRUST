@@ -10,6 +10,7 @@ import { AdminView } from './views/AdminView';
 import { LoansView } from './views/LoansView';
 import { TrustScoreView } from './views/TrustScoreView';
 import { ActivityView } from './views/ActivityView';
+import { SettingsView } from './views/SettingsView';
 import { UploadProofModal } from './components/UploadProofModal';
 import { AppProvider } from './context/AppContext';
 
@@ -50,7 +51,7 @@ function AppShell({ role, setRole }) {
               <Route path="/activity"   element={<ActivityView />} />
               <Route path="/groups"     element={role === 'Admin' ? renderDashboard() : <Navigate to="/" />} />
               <Route path="/users"      element={<div className="section"><h2>Users</h2><p>User management.</p></div>} />
-              <Route path="/settings"   element={<div className="section"><h2>Settings</h2><p>Settings panel.</p></div>} />
+              <Route path="/settings"   element={<SettingsView role={role} />} />
             </Routes>
           </div>
         </div>
