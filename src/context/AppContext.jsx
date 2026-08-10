@@ -41,6 +41,14 @@ export const AppProvider = ({ children }) => {
   const [proofModalOpen, setProofModalOpen] = useState(false);
   const [loanRequestModalOpen, setLoanRequestModalOpen] = useState(false);
   const [loanRepayModalOpen, setLoanRepayModalOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  // Notifications
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Your payment was verified', desc: 'Treasurer verified your UGX 200,000 contribution.', time: '2 hours ago', read: false },
+    { id: 2, title: 'New loan request', desc: 'Ssenyonjo K. requested UGX 450,000.', time: '1 day ago', read: true },
+    { id: 3, title: 'Upcoming due date', desc: 'Your next loan instalment of UGX 95,000 is due in 3 days.', time: '2 days ago', read: true },
+  ]);
 
   // Loan state
   const [memberLoan, setMemberLoan] = useState({
@@ -231,6 +239,11 @@ export const AppProvider = ({ children }) => {
       submitProof,
       verifyProof,
       rejectProof,
+      // Notifications
+      notificationsOpen,
+      setNotificationsOpen,
+      notifications,
+      setNotifications,
       // Loan properties
       memberLoan,
       loansList,

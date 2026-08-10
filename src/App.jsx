@@ -14,6 +14,7 @@ import { ActivityView } from './views/ActivityView';
 import { SettingsView } from './views/SettingsView';
 import { StatementsView } from './views/StatementsView';
 import { UploadProofModal } from './components/UploadProofModal';
+import { NotificationsModal } from './components/NotificationsModal';
 import { AppProvider } from './context/AppContext';
 
 function AppShell({ role, setRole }) {
@@ -63,6 +64,7 @@ function AppShell({ role, setRole }) {
 
       {/* Global upload proof modal — rendered at root so it overlays everything */}
       <UploadProofModal />
+      <NotificationsModal />
     </Router>
   );
 }
