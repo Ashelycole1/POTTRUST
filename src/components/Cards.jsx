@@ -25,18 +25,26 @@ export const PotCard = () => {
 
 export const ScoreCard = () => {
   const navigate = useNavigate();
+  const { trustScore } = useApp();
+  
+  // Calculate stroke dash based on score out of 1000
+  const maxScore = 1000;
+  const percentage = trustScore.score / maxScore;
+  const circumference = 2 * Math.PI * 22; // r=22
+  const strokeDashoffset = circumference - percentage * circumference;
+
   return (
   <div className="card card-score">
     <div className="weave"></div>
     <svg className="score-ring" viewBox="0 0 54 54">
       <circle cx="27" cy="27" r="22" fill="none" stroke="#4a3a12" strokeWidth="5"/>
       <circle cx="27" cy="27" r="22" fill="none" stroke="#f2c14e" strokeWidth="5"
-        strokeDasharray="138" strokeDashoffset="26" strokeLinecap="round" transform="rotate(-90 27 27)"/>
-      <text x="27" y="31" textAnchor="middle" className="score-num">812</text>
+        strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" transform="rotate(-90 27 27)"/>
+      <text x="27" y="31" textAnchor="middle" className="score-num">{trustScore.score}</text>
     </svg>
     <div className="card-label">Your trust score</div>
-    <div className="card-value" style={{ fontSize: '22px' }}>Very good <small>tier</small></div>
-    <div className="card-meta">On-time streak: 14 cycles</div>
+    <div className="card-value" style={{ fontSize: '22px' }}>{trustScore.tier} <small>tier</small></div>
+    <div className="card-meta">On-time streak: {trustScore.streak} cycles</div>
     <div className="card-actions">
       <button onClick={() => navigate('/trust')}><TrendingUp size={18} /><span>Breakdown</span></button>
       <div className="divider"></div>

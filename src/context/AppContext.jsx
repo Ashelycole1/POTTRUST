@@ -198,6 +198,28 @@ export const AppProvider = ({ children }) => {
     setLoanRequestModalOpen(false);
   };
 
+  // Trust Score state
+  const [trustScore, setTrustScore] = useState({
+    score: 812,
+    tier: 'Very good',
+    streak: 14,
+    loanRepayments: '4 / 4 on time',
+    pendingProofs: 1,
+    finesIssued: 0,
+    lateContributions: 0,
+    history: [
+      { cycle: 'Aug 2026', score: 812, change: '+3' },
+      { cycle: 'Jul 2026', score: 809, change: '+11' },
+      { cycle: 'Jun 2026', score: 798, change: '+8' },
+      { cycle: 'May 2026', score: 790, change: '-5' },
+    ],
+    tips: [
+      { tip: 'Resolve your pending payment proof', impact: 'High impact', color: 'var(--gold)' },
+      { tip: 'Pay your next loan instalment before the due date', impact: 'High impact', color: 'var(--gold)' },
+      { tip: 'Maintain your contribution streak for 3 more cycles', impact: 'Medium impact', color: 'var(--text-dim)' },
+    ]
+  });
+
   return (
     <AppContext.Provider value={{
       memberContrib,
@@ -219,6 +241,9 @@ export const AppProvider = ({ children }) => {
       setLoanRepayModalOpen,
       repayLoan,
       requestLoan,
+      // Trust properties
+      trustScore,
+      setTrustScore,
     }}>
       {children}
     </AppContext.Provider>
