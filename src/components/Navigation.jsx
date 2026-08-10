@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Users, Landmark, TrendingUp, FileText, Settings, Plus, Menu, Activity } from 'lucide-react';
+import { Home, Users, Landmark, TrendingUp, FileText, Settings, Plus, Activity } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
@@ -62,8 +62,8 @@ export const MobileBottomNav = ({ role }) => {
       <Link to="/loans" className={`nav-item ${location.pathname === '/loans' ? 'active' : ''}`}>
         <Landmark size={20} /><span>Loans</span>
       </Link>
-      <Link to="/activity" className={`nav-item ${location.pathname === '/activity' ? 'active' : ''}`}>
-        <Activity size={20} /><span>Activity</span>
+      <Link to="/settings" className={`nav-item ${location.pathname === '/settings' ? 'active' : ''}`}>
+        <Settings size={20} /><span>Settings</span>
       </Link>
     </nav>
   );
