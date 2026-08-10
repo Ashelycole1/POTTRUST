@@ -97,13 +97,6 @@ const PersonalProfile = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const avatarRef = useRef();
 
-  // Security section
-  const [currentPin, setCurrentPin] = useState('');
-  const [newPin, setNewPin]         = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [show, setShow]             = useState(false);
-  const [twoStep, setTwoStep]       = useState(false);
-  const [pinSaved, setPinSaved]     = useState(false);
 
   const handleAvatar = (e) => {
     const f = e.target.files[0];
@@ -113,12 +106,7 @@ const PersonalProfile = () => {
   };
 
   const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2500); };
-  const savePin = () => {
-    if (!currentPin || !newPin || newPin !== confirmPin) return;
-    setPinSaved(true);
-    setCurrentPin(''); setNewPin(''); setConfirmPin('');
-    setTimeout(() => setPinSaved(false), 2500);
-  };
+
 
   return (
     <>
@@ -201,63 +189,6 @@ const PersonalProfile = () => {
       </Card>
 
       <SaveBtn onClick={save} saved={saved} />
-
-      {/* Security */}
-      <div style={{ marginTop: 32 }}>
-        <SectionHeader title="Security" subtitle="Manage your PIN and account access." />
-      </div>
-      <Card>
-        <Field label="Current PIN">
-          <div style={{ position: 'relative' }}>
-            <Lock size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)' }} />
-            <input
-              type={show ? 'text' : 'password'}
-              style={{ ...inputStyle, paddingLeft: 34, paddingRight: 40, fontFamily: 'IBM Plex Mono', letterSpacing: 4 }}
-              value={currentPin} onChange={e => setCurrentPin(e.target.value)} placeholder="Enter current PIN"
-            />
-            <button onClick={() => setShow(!show)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', padding: 0 }}>
-              {show ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </Field>
-        <Field label="New PIN">
-          <input
-            type={show ? 'text' : 'password'}
-            style={{ ...inputStyle, fontFamily: 'IBM Plex Mono', letterSpacing: 4 }}
-            value={newPin} onChange={e => setNewPin(e.target.value)} placeholder="Enter new PIN"
-          />
-        </Field>
-        <Field label="Confirm New PIN">
-          <input
-            type={show ? 'text' : 'password'}
-            style={{ ...inputStyle, fontFamily: 'IBM Plex Mono', letterSpacing: 4, borderColor: confirmPin && confirmPin !== newPin ? 'var(--coral)' : 'var(--line)' }}
-            value={confirmPin} onChange={e => setConfirmPin(e.target.value)} placeholder="Repeat new PIN"
-          />
-          {confirmPin && confirmPin !== newPin && <p style={{ fontSize: 12, color: 'var(--coral)', margin: '6px 0 0' }}>PINs do not match</p>}
-        </Field>
-
-        <Toggle
-          value={twoStep} onChange={setTwoStep}
-          label="2-Step Verification"
-          sub="Require a one-time code when logging in from a new device"
-        />
-        <div style={{ marginTop: 16 }}>
-          <button
-            onClick={savePin}
-            disabled={!currentPin || !newPin || newPin !== confirmPin}
-            style={{
-              background: currentPin && newPin && newPin === confirmPin ? (pinSaved ? 'var(--green-deep)' : 'var(--green)') : 'var(--surface-2)',
-              color: currentPin && newPin && newPin === confirmPin ? (pinSaved ? 'var(--green)' : '#08251d') : 'var(--text-dim)',
-              border: 'none', borderRadius: 12, padding: '13px 24px',
-              fontWeight: 700, fontSize: 14, cursor: currentPin && newPin && newPin === confirmPin ? 'pointer' : 'not-allowed',
-              display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s',
-            }}
-          >
-            <Lock size={16} />
-            {pinSaved ? 'PIN Updated' : 'Update PIN'}
-          </button>
-        </div>
-      </Card>
     </>
   );
 };
