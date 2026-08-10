@@ -48,7 +48,24 @@ export const MobileBottomNav = ({ role }) => {
   const location = useLocation();
   const { setProofModalOpen } = useApp();
 
-  if (role === 'Admin') return null;
+  if (role === 'Admin') {
+    return (
+      <nav className="bottom-nav">
+        <Link to="/" className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+          <Home size={20} /><span>Overview</span>
+        </Link>
+        <Link to="/groups" className={`nav-item ${location.pathname === '/groups' ? 'active' : ''}`}>
+          <Users size={20} /><span>Groups</span>
+        </Link>
+        <Link to="/users" className={`nav-item ${location.pathname === '/users' ? 'active' : ''}`}>
+          <Users size={20} /><span>Users</span>
+        </Link>
+        <Link to="/settings" className={`nav-item ${location.pathname === '/settings' ? 'active' : ''}`}>
+          <Settings size={20} /><span>Settings</span>
+        </Link>
+      </nav>
+    );
+  }
 
   return (
     <nav className="bottom-nav">
