@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PotCard, ContribCard } from '../components/Cards';
 import { MemberRow } from '../components/MemberRow';
-import { DollarSign, CheckCircle, Landmark, Users, Check, X } from 'lucide-react';
+import { DollarSign, CheckCircle, Landmark, Users, Check, X, Plus, Activity } from 'lucide-react';
 import { QuickActionTile } from '../components/QuickActionTile';
 import { useApp } from '../context/AppContext';
 
@@ -119,7 +120,8 @@ const actionBtn = (bg, color) => ({
 
 export const TreasurerView = () => {
   const [activeTab, setActiveTab] = useState('review');
-  const { pendingProofs } = useApp();
+  const navigate = useNavigate();
+  const { pendingProofs, setProofModalOpen } = useApp();
 
   return (
     <>
@@ -176,10 +178,10 @@ export const TreasurerView = () => {
         <div className="section tab-panel">
           <div className="section-head"><h3>Quick actions</h3></div>
           <div className="quick-grid">
-            <QuickActionTile icon={DollarSign}   label="Contribute"  colorClass="qi-green" />
-            <QuickActionTile icon={CheckCircle}  label="Verify Proof" colorClass="qi-gold" />
-            <QuickActionTile icon={Landmark}     label="Request Loan" colorClass="qi-green" />
-            <QuickActionTile icon={Users}        label="Group Info"   colorClass="qi-gold" />
+            <QuickActionTile icon={Plus}        label="Contribute"  colorClass="qi-green" onClick={() => setProofModalOpen(true)} />
+            <QuickActionTile icon={CheckCircle}  label="Verify Proof" colorClass="qi-gold"  onClick={() => setActiveTab('review')} />
+            <QuickActionTile icon={Activity}     label="Request Loan" colorClass="qi-green" onClick={() => navigate('/loans')} />
+            <QuickActionTile icon={Users}        label="Group Info"   colorClass="qi-gold"  onClick={() => navigate('/settings')} />
           </div>
         </div>
       )}

@@ -4,7 +4,7 @@ import { TrendingUp, FileText, Plus, Upload, Download, Calendar } from 'lucide-r
 import { useApp } from '../context/AppContext';
 
 export const PotCard = () => {
-  const { groupPot } = useApp();
+  const { groupPot, setProofModalOpen } = useApp();
   const navigate = useNavigate();
   return (
     <div className="card card-pot">
@@ -15,7 +15,7 @@ export const PotCard = () => {
       </div>
       <div className="card-meta">28 members · Aug cycle</div>
       <div className="card-actions">
-        <button><Download size={18} /><span>Contribute</span></button>
+        <button onClick={() => setProofModalOpen(true)}><Download size={18} /><span>Contribute</span></button>
         <div className="divider"></div>
         <button onClick={() => navigate('/statements')}><FileText size={18} /><span>Statement</span></button>
       </div>
@@ -40,7 +40,7 @@ export const ScoreCard = () => {
     <div className="card-actions">
       <button onClick={() => navigate('/trust')}><TrendingUp size={18} /><span>Breakdown</span></button>
       <div className="divider"></div>
-      <button><Plus size={18} /><span>Improve it</span></button>
+      <button onClick={() => navigate('/trust')}><Plus size={18} /><span>Improve it</span></button>
     </div>
   </div>
   );
@@ -64,7 +64,7 @@ export const ContribCard = () => {
         </div>
       )}
       <div className="card-actions">
-        <button><Plus size={18} /><span>Top up</span></button>
+        <button onClick={() => setProofModalOpen(true)}><Plus size={18} /><span>Top up</span></button>
         <div className="divider"></div>
         <button onClick={() => setProofModalOpen(true)}>
           <Upload size={18} /><span>Upload proof</span>
@@ -82,7 +82,7 @@ export const LoanCard = () => {
     <div className="card-value" style={{ fontFamily: 'IBM Plex Mono' }}>UGX 620,000</div>
     <div className="card-meta">Next repayment: UGX 95,000 · 12 Aug</div>
     <div className="card-actions">
-      <button><Download size={18} /><span>Repay</span></button>
+      <button onClick={() => navigate('/loans')}><Download size={18} /><span>Repay</span></button>
       <div className="divider"></div>
       <button onClick={() => navigate('/loans')}><Calendar size={18} /><span>Schedule</span></button>
     </div>
