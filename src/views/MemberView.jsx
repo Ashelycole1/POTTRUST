@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
 import { PotCard, ScoreCard, ContribCard, LoanCard } from '../components/Cards';
 import { QuickActionTile } from '../components/QuickActionTile';
 import { MemberRow } from '../components/MemberRow';
+import { AuditLog } from '../components/AuditLog';
+import { RepayLoanModal } from '../components/RepayLoanModal';
+import { RequestLoanModal } from '../components/RequestLoanModal';
 import { DollarSign, CheckCircle, Landmark, Users } from 'lucide-react';
 
 export const MemberView = () => {
   const [activeTab, setActiveTab] = useState('foryou');
+  const navigate = useNavigate();
+  const { setProofModalOpen, setLoanRequestModalOpen, activityLog, loansList } = useApp();
 
   return (
     <>
@@ -37,10 +44,10 @@ export const MemberView = () => {
         <div className="section tab-panel">
           <div className="section-head"><h3>Quick actions</h3></div>
           <div className="quick-grid">
-            <QuickActionTile icon={DollarSign} label="Contribute" colorClass="qi-green" />
-            <QuickActionTile icon={CheckCircle} label="Verify Proof" colorClass="qi-gold" />
-            <QuickActionTile icon={Landmark} label="Request Loan" colorClass="qi-green" />
-            <QuickActionTile icon={Users} label="Group Info" colorClass="qi-gold" />
+            <QuickActionTile icon={DollarSign} label="Contribute" colorClass="qi-green" onClick={() => setProofModalOpen(true)} />
+            <QuickActionTile icon={CheckCircle} label="Statement" colorClass="qi-gold" onClick={() => navigate('/statements')} />
+            <QuickActionTile icon={Landmark} label="Request Loan" colorClass="qi-green" onClick={() => setLoanRequestModalOpen(true)} />
+            <QuickActionTile icon={Users} label="Group Info" colorClass="qi-gold" onClick={() => navigate('/members')} />
           </div>
 
           <div className="section-head" style={{ marginTop: 26 }}>
@@ -70,21 +77,34 @@ export const MemberView = () => {
 
       {activeTab === 'loans' && (
         <div className="section tab-panel">
-          <div className="section-head"><h3>Loan book</h3><a className="link" href="#">New request</a></div>
+          <div className="section-head">
+            <h3>Loan book</h3>
+            <button
+              className="link"
+              onClick={() => setLoanRequestModalOpen(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >New request</button>
+          </div>
           <div className="member-list">
-            <MemberRow name="You" initials="NA" sub="UGX 620,000 outstanding · 4 of 8 paid" status="ACTIVE" avatarColor="var(--gold)" />
-            <MemberRow name="Egabo Aaron" initials="EA" sub="UGX 300,000 · cleared 2 Jul" status="CLEARED" avatarColor="var(--green)" />
-            <MemberRow name="Ssenyonjo K." initials="SK" sub="UGX 450,000 · repayment overdue" status="AT RISK" avatarColor="var(--coral)" />
+            {loansList.map(loan => (
+              <MemberRow key={loan.id} name={loan.name} initials={loan.initials} sub={loan.sub} status={loan.status} avatarColor={loan.color} />
+            ))}
           </div>
         </div>
       )}
 
       {activeTab === 'activity' && (
         <div className="section tab-panel">
-          <div className="section-head"><h3>Audit log</h3></div>
-          <p style={{color: 'var(--text-faint)', fontSize: '13px'}}>See immutable audit log on the right panel (Desktop).</p>
+          <div className="section-head">
+            <h3>Audit log</h3>
+            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Read-only</span>
+          </div>
+          <AuditLog entries={activityLog} />
         </div>
       )}
+
+      <RepayLoanModal />
+      <RequestLoanModal />
     </>
   );
 };
