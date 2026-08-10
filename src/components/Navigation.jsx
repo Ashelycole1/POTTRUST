@@ -1,6 +1,7 @@
 import React from 'react';
 import { Home, Users, Landmark, TrendingUp, FileText, Settings, Plus, Menu, Activity } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
 
 export const DesktopSidebar = ({ role }) => {
   const location = useLocation();
@@ -45,6 +46,7 @@ export const DesktopSidebar = ({ role }) => {
 
 export const MobileBottomNav = ({ role }) => {
   const location = useLocation();
+  const { setProofModalOpen } = useApp();
 
   if (role === 'Admin') return null;
 
@@ -56,7 +58,7 @@ export const MobileBottomNav = ({ role }) => {
       <Link to="/members" className={`nav-item ${location.pathname === '/members' ? 'active' : ''}`}>
         <Users size={20} /><span>Members</span>
       </Link>
-      <div className="nav-fab"><Plus size={24} /></div>
+      <div className="nav-fab" onClick={() => setProofModalOpen(true)} style={{ cursor: 'pointer' }}><Plus size={24} /></div>
       <Link to="/loans" className={`nav-item ${location.pathname === '/loans' ? 'active' : ''}`}>
         <Landmark size={20} /><span>Loans</span>
       </Link>
