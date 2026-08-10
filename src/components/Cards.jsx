@@ -76,13 +76,14 @@ export const ContribCard = () => {
 
 export const LoanCard = () => {
   const navigate = useNavigate();
+  const { setLoanRepayModalOpen, memberLoan } = useApp();
   return (
   <div className="card card-loan">
     <div className="card-label">Active loan</div>
-    <div className="card-value" style={{ fontFamily: 'IBM Plex Mono' }}>UGX 620,000</div>
-    <div className="card-meta">Next repayment: UGX 95,000 · 12 Aug</div>
+    <div className="card-value" style={{ fontFamily: 'IBM Plex Mono' }}>UGX {memberLoan.outstanding.toLocaleString()}</div>
+    <div className="card-meta">Next repayment: UGX {memberLoan.nextRepayment.toLocaleString()} A 12 Aug</div>
     <div className="card-actions">
-      <button onClick={() => navigate('/loans')}><Download size={18} /><span>Repay</span></button>
+      <button onClick={() => setLoanRepayModalOpen(true)}><Download size={18} /><span>Repay</span></button>
       <div className="divider"></div>
       <button onClick={() => navigate('/loans')}><Calendar size={18} /><span>Schedule</span></button>
     </div>

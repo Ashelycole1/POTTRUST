@@ -10,6 +10,13 @@ const INITIAL_LOG = [
   { id: 6, c: 'var(--gold)',  h: 'New loan request from <b>Ssenyonjo K.</b>',     s: 'UGX 450,000 requested · pending vote',     t: 'Mon, 11:20 AM' },
 ];
 
+const INITIAL_SCHEDULE = [
+  { id: 5, label: 'Instalment 5', date: '12 Aug 2026', amount: 95000, done: false },
+  { id: 6, label: 'Instalment 6', date: '12 Sep 2026', amount: 95000, done: false },
+  { id: 7, label: 'Instalment 7', date: '12 Oct 2026', amount: 95000, done: false },
+  { id: 8, label: 'Instalment 8', date: '12 Nov 2026', amount: 95000, done: false },
+];
+
 const AppContext = createContext(null);
 
 export const AppProvider = ({ children }) => {
@@ -30,8 +37,26 @@ export const AppProvider = ({ children }) => {
   // Activity log
   const [activityLog, setActivityLog] = useState(INITIAL_LOG);
 
-  // Whether upload modal is open
+  // Whether modals are open
   const [proofModalOpen, setProofModalOpen] = useState(false);
+  const [loanRequestModalOpen, setLoanRequestModalOpen] = useState(false);
+  const [loanRepayModalOpen, setLoanRepayModalOpen] = useState(false);
+
+  // Loan state
+  const [memberLoan, setMemberLoan] = useState({
+    outstanding: 620000,
+    nextRepayment: 95000,
+    totalPaid: 380000,
+    totalTerm: 1000000,
+  });
+
+  const [loansList, setLoansList] = useState([
+    { id: 1, name: 'You', initials: 'NA', sub: 'UGX 620,000 outstanding · 4 of 8 instalments paid', status: 'ACTIVE', color: 'var(--gold)' },
+    { id: 2, name: 'Egabo Aaron', initials: 'EA', sub: 'UGX 300,000 · cleared 2 Jul', status: 'CLEARED', color: 'var(--green)' },
+    { id: 3, name: 'Ssenyonjo K.', initials: 'SK', sub: 'UGX 450,000 · repayment overdue', status: 'AT RISK', color: 'var(--coral)' },
+  ]);
+
+  const [repaymentSchedule, setRepaymentSchedule] = useState(INITIAL_SCHEDULE);
 
   // Add a log entry (prepend so newest is first)
   const addLogEntry = (entry) => {
@@ -112,6 +137,67 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  // Repay a loan
+  const repayLoan = (repayAmount, mode, txnRef) => {
+    const amt = Number(repayAmount);
+    setMemberLoan(prev => {
+      const newOutstanding = Math.max(0, prev.outstanding - amt);
+      return {
+        ...prev,
+        outstanding: newOutstanding,
+        totalPaid: prev.totalPaid + amt,
+      };
+    });
+
+    // Mark instalment as paid in schedule
+    setRepaymentSchedule(prev => {
+      let remainingRepay = amt;
+      return prev.map(inst => {
+        if (!inst.done && remainingRepay >= inst.amount) {
+          remainingRepay -= inst.amount;
+          return { ...inst, done: true };
+        }
+        return inst;
+      });
+    });
+
+    setGroupPot(prev => prev + amt);
+
+    addLogEntry({
+      c: 'var(--green)',
+      h: 'Loan repayment received from <b>you</b>',
+      s: `UGX ${amt.toLocaleString()} · ${mode} ref #${txnRef} · pot updated`,
+      t: 'Just now',
+    });
+
+    // Update list status if cleared
+    setLoansList(prev => prev.map(l => {
+      if (l.name === 'You') {
+        const isNowCleared = memberLoan.outstanding - amt <= 0;
+        return {
+          ...l,
+          sub: isNowCleared ? `UGX ${memberLoan.totalTerm.toLocaleString()} · fully cleared` : `UGX ${(memberLoan.outstanding - amt).toLocaleString()} outstanding`,
+          status: isNowCleared ? 'CLEARED' : 'ACTIVE',
+          color: isNowCleared ? 'var(--green)' : 'var(--gold)',
+        };
+      }
+      return l;
+    }));
+
+    setLoanRepayModalOpen(false);
+  };
+
+  // Request new loan
+  const requestLoan = (loanData) => {
+    addLogEntry({
+      c: 'var(--gold)',
+      h: 'New loan request from <b>you</b>',
+      s: `UGX ${Number(loanData.amount).toLocaleString()} requested · pending approval`,
+      t: 'Just now',
+    });
+    setLoanRequestModalOpen(false);
+  };
+
   return (
     <AppContext.Provider value={{
       memberContrib,
@@ -123,6 +209,16 @@ export const AppProvider = ({ children }) => {
       submitProof,
       verifyProof,
       rejectProof,
+      // Loan properties
+      memberLoan,
+      loansList,
+      repaymentSchedule,
+      loanRequestModalOpen,
+      setLoanRequestModalOpen,
+      loanRepayModalOpen,
+      setLoanRepayModalOpen,
+      repayLoan,
+      requestLoan,
     }}>
       {children}
     </AppContext.Provider>
@@ -134,3 +230,4 @@ export const useApp = () => {
   if (!ctx) throw new Error('useApp must be used inside AppProvider');
   return ctx;
 };
+
