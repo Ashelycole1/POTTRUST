@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MemberRow } from '../components/MemberRow';
 import { Activity, ShieldCheck, TrendingUp, Users, DollarSign, Database, Plus, X } from 'lucide-react';
 
@@ -50,9 +51,9 @@ export const AdminOverview = () => {
           {/* Mock chart area */}
           <div style={{ height: 180, display: 'flex', alignItems: 'flex-end', gap: 8, paddingBottom: 8, borderBottom: '1px solid var(--line)' }}>
              {[30, 45, 20, 60, 80, 50, 90, 70, 40, 65, 85, 100, 75, 55].map((h, i) => (
-               <div key={i} style={{ flex: 1, background: 'var(--green-deep)', height: `${h}%`, borderRadius: '4px 4px 0 0', position: 'relative' }}>
-                 <div style={{ position: 'absolute', bottom: 0, width: '100%', height: '100%', background: 'linear-gradient(to top, var(--green) 0%, transparent 100%)', opacity: 0.3 }} />
-               </div>
+                <div key={i} style={{ flex: 1, background: 'var(--green-deep)', height: `${h}%`, borderRadius: '4px 4px 0 0', position: 'relative' }}>
+                  <div style={{ position: 'absolute', bottom: 0, width: '100%', height: '100%', background: 'linear-gradient(to top, var(--green) 0%, transparent 100%)', opacity: 0.3 }} />
+                </div>
              ))}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, fontSize: 11, color: 'var(--text-faint)', fontWeight: 600 }}>
@@ -148,6 +149,7 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
 
 export const AdminGroupsView = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -178,7 +180,7 @@ export const AdminGroupsView = () => {
             status="HEALTHY" 
             avatarColor="var(--green)" 
             actionLabel="Manage"
-            onAction={() => {}}
+            onAction={() => navigate('/settings')}
           />
           <MemberRow 
             name="Bwaise Women's Group" 
@@ -187,7 +189,7 @@ export const AdminGroupsView = () => {
             status="HEALTHY" 
             avatarColor="var(--green)" 
             actionLabel="Manage"
-            onAction={() => {}}
+            onAction={() => navigate('/settings')}
           />
           <MemberRow 
             name="Kisekka Mechanics" 
@@ -196,7 +198,7 @@ export const AdminGroupsView = () => {
             status="AT RISK" 
             avatarColor="var(--coral)" 
             actionLabel="Manage"
-            onAction={() => {}}
+            onAction={() => navigate('/settings')}
           />
           <MemberRow 
             name="Owino Market Vendors" 
@@ -205,7 +207,7 @@ export const AdminGroupsView = () => {
             status="HEALTHY" 
             avatarColor="var(--green)" 
             actionLabel="Manage"
-            onAction={() => {}}
+            onAction={() => navigate('/settings')}
           />
         </div>
       </div>
