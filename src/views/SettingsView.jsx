@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   Camera, Save, Users, DollarSign, Bell, Shield,
-  MapPin, Phone, Mail, Globe, ChevronRight, Trash2, UserPlus, Settings
+  MapPin, Phone, Mail, Globe, Trash2, UserPlus, User, Lock, Eye, EyeOff
 } from 'lucide-react';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -83,8 +83,188 @@ const Toggle = ({ value, onChange, label, sub }) => (
   </div>
 );
 
+// ── Personal Profile ──────────────────────────────────────────────────────────
+const PersonalProfile = () => {
+  const [saved, setSaved]           = useState(false);
+  const [fullName, setFullName]     = useState('Niwasiima A.');
+  const [phone, setPhone]           = useState('+256 700 123456');
+  const [email, setEmail]           = useState('niwasiima.a@gmail.com');
+  const [nin, setNin]               = useState('');
+  const [nokName, setNokName]       = useState('');
+  const [nokPhone, setNokPhone]     = useState('');
+  const [lang, setLang]             = useState('English');
+  const [avatar, setAvatar]         = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const avatarRef = useRef();
+
+  // Security section
+  const [currentPin, setCurrentPin] = useState('');
+  const [newPin, setNewPin]         = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [show, setShow]             = useState(false);
+  const [twoStep, setTwoStep]       = useState(false);
+  const [pinSaved, setPinSaved]     = useState(false);
+
+  const handleAvatar = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    setAvatar(f);
+    setAvatarPreview(URL.createObjectURL(f));
+  };
+
+  const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2500); };
+  const savePin = () => {
+    if (!currentPin || !newPin || newPin !== confirmPin) return;
+    setPinSaved(true);
+    setCurrentPin(''); setNewPin(''); setConfirmPin('');
+    setTimeout(() => setPinSaved(false), 2500);
+  };
+
+  return (
+    <>
+      <SectionHeader title="My Profile" subtitle="Your personal information visible to group administrators." />
+
+      {/* Avatar */}
+      <Card>
+        <input type="file" accept="image/*" ref={avatarRef} onChange={handleAvatar} style={{ display: 'none' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 20 }}>
+          <div
+            onClick={() => avatarRef.current.click()}
+            style={{
+              width: 76, height: 76, borderRadius: '50%',
+              background: avatarPreview ? 'transparent' : 'var(--green-deep)',
+              border: '2px solid var(--line)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden', flexShrink: 0, position: 'relative',
+            }}
+          >
+            {avatarPreview
+              ? <img src={avatarPreview} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ fontFamily: 'Sora', fontWeight: 800, fontSize: 26, color: 'var(--green)' }}>NA</span>}
+            <div style={{ position: 'absolute', bottom: 0, right: 0, width: 22, height: 22, borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Camera size={11} color="#08251d" />
+            </div>
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>Niwasiima A.</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 2 }}>Member since Jan 2025</div>
+            <button
+              onClick={() => avatarRef.current.click()}
+              style={{ marginTop: 8, background: 'var(--surface-2)', border: '1px solid var(--line)', color: 'var(--text)', borderRadius: 10, padding: '7px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+            >
+              {avatarPreview ? 'Change photo' : 'Upload photo'}
+            </button>
+          </div>
+        </div>
+
+        <Field label="Full Name">
+          <input style={inputStyle} value={fullName} onChange={e => setFullName(e.target.value)} />
+        </Field>
+        <Field label="Phone Number">
+          <div style={{ position: 'relative' }}>
+            <Phone size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)' }} />
+            <input style={{ ...inputStyle, paddingLeft: 34 }} value={phone} onChange={e => setPhone(e.target.value)} />
+          </div>
+        </Field>
+        <Field label="Email Address">
+          <div style={{ position: 'relative' }}>
+            <Mail size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)' }} />
+            <input type="email" style={{ ...inputStyle, paddingLeft: 34 }} value={email} onChange={e => setEmail(e.target.value)} />
+          </div>
+        </Field>
+        <Field label="National ID (NIN)">
+          <input style={inputStyle} value={nin} onChange={e => setNin(e.target.value)} placeholder="e.g. CM12345678XXXX" />
+          <p style={{ fontSize: 11.5, color: 'var(--text-faint)', margin: '6px 0 0' }}>Used for identity verification. Not shared publicly.</p>
+        </Field>
+        <Field label="Preferred Language">
+          <select style={selectStyle} value={lang} onChange={e => setLang(e.target.value)}>
+            <option>English</option>
+            <option>Luganda</option>
+            <option>Swahili</option>
+            <option>French</option>
+          </select>
+        </Field>
+      </Card>
+
+      {/* Next of Kin */}
+      <Card>
+        <SectionHeader title="Next of Kin" subtitle="Contact in case of emergency." />
+        <Field label="Full Name">
+          <input style={inputStyle} value={nokName} onChange={e => setNokName(e.target.value)} placeholder="e.g. Mugisha Robert" />
+        </Field>
+        <Field label="Phone Number">
+          <div style={{ position: 'relative' }}>
+            <Phone size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)' }} />
+            <input style={{ ...inputStyle, paddingLeft: 34 }} value={nokPhone} onChange={e => setNokPhone(e.target.value)} placeholder="+256 700 000000" />
+          </div>
+        </Field>
+      </Card>
+
+      <SaveBtn onClick={save} saved={saved} />
+
+      {/* Security */}
+      <div style={{ marginTop: 32 }}>
+        <SectionHeader title="Security" subtitle="Manage your PIN and account access." />
+      </div>
+      <Card>
+        <Field label="Current PIN">
+          <div style={{ position: 'relative' }}>
+            <Lock size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)' }} />
+            <input
+              type={show ? 'text' : 'password'}
+              style={{ ...inputStyle, paddingLeft: 34, paddingRight: 40, fontFamily: 'IBM Plex Mono', letterSpacing: 4 }}
+              value={currentPin} onChange={e => setCurrentPin(e.target.value)} placeholder="Enter current PIN"
+            />
+            <button onClick={() => setShow(!show)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', padding: 0 }}>
+              {show ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </Field>
+        <Field label="New PIN">
+          <input
+            type={show ? 'text' : 'password'}
+            style={{ ...inputStyle, fontFamily: 'IBM Plex Mono', letterSpacing: 4 }}
+            value={newPin} onChange={e => setNewPin(e.target.value)} placeholder="Enter new PIN"
+          />
+        </Field>
+        <Field label="Confirm New PIN">
+          <input
+            type={show ? 'text' : 'password'}
+            style={{ ...inputStyle, fontFamily: 'IBM Plex Mono', letterSpacing: 4, borderColor: confirmPin && confirmPin !== newPin ? 'var(--coral)' : 'var(--line)' }}
+            value={confirmPin} onChange={e => setConfirmPin(e.target.value)} placeholder="Repeat new PIN"
+          />
+          {confirmPin && confirmPin !== newPin && <p style={{ fontSize: 12, color: 'var(--coral)', margin: '6px 0 0' }}>PINs do not match</p>}
+        </Field>
+
+        <Toggle
+          value={twoStep} onChange={setTwoStep}
+          label="2-Step Verification"
+          sub="Require a one-time code when logging in from a new device"
+        />
+        <div style={{ marginTop: 16 }}>
+          <button
+            onClick={savePin}
+            disabled={!currentPin || !newPin || newPin !== confirmPin}
+            style={{
+              background: currentPin && newPin && newPin === confirmPin ? (pinSaved ? 'var(--green-deep)' : 'var(--green)') : 'var(--surface-2)',
+              color: currentPin && newPin && newPin === confirmPin ? (pinSaved ? 'var(--green)' : '#08251d') : 'var(--text-dim)',
+              border: 'none', borderRadius: 12, padding: '13px 24px',
+              fontWeight: 700, fontSize: 14, cursor: currentPin && newPin && newPin === confirmPin ? 'pointer' : 'not-allowed',
+              display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s',
+            }}
+          >
+            <Lock size={16} />
+            {pinSaved ? 'PIN Updated' : 'Update PIN'}
+          </button>
+        </div>
+      </Card>
+    </>
+  );
+};
+
 // ── tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
+  { id: 'personal',      icon: User,       label: 'My Profile' },
   { id: 'profile',       icon: Users,      label: 'Group Profile' },
   { id: 'contributions', icon: DollarSign, label: 'Contributions' },
   { id: 'fines',         icon: Shield,     label: 'Fines & Rules' },
@@ -427,12 +607,12 @@ export const SettingsView = ({ role }) => {
       case 'Admin':
         return TABS;
       case 'Chairperson':
-        return TABS.filter(t => ['profile', 'fines', 'members', 'notifications'].includes(t.id));
+        return TABS.filter(t => ['personal', 'profile', 'fines', 'members', 'notifications'].includes(t.id));
       case 'Treasurer':
-        return TABS.filter(t => ['contributions', 'notifications'].includes(t.id));
+        return TABS.filter(t => ['personal', 'contributions', 'notifications'].includes(t.id));
       case 'Member':
       default:
-        return TABS.filter(t => ['notifications'].includes(t.id));
+        return TABS.filter(t => ['personal', 'notifications'].includes(t.id));
     }
   };
 
@@ -441,6 +621,7 @@ export const SettingsView = ({ role }) => {
 
   const renderTab = () => {
     switch (activeTab) {
+      case 'personal':      return <PersonalProfile />;
       case 'contributions': return <ContributionSettings />;
       case 'fines':         return <FinesSettings />;
       case 'members':       return <MembersSettings />;
