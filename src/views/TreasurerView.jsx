@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PotCard, ContribCard } from '../components/Cards';
+import { PotCard, ContribCard, ScoreCard, LoanCard } from '../components/Cards';
 import { MemberRow } from '../components/MemberRow';
 import { DollarSign, CheckCircle, Landmark, Users, Check, X, Plus, Activity } from 'lucide-react';
 import { QuickActionTile } from '../components/QuickActionTile';
@@ -134,10 +134,12 @@ export const TreasurerView = () => {
       <div className="carousel-wrap">
         <div className="carousel">
           <PotCard />
+          <ScoreCard />
           <ContribCard />
+          <LoanCard />
         </div>
         <div className="dots">
-          <span className="active"></span><span></span>
+          <span className="active"></span><span></span><span></span><span></span>
         </div>
       </div>
 

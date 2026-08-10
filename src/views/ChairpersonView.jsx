@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PotCard } from '../components/Cards';
+import { PotCard, ScoreCard, ContribCard, LoanCard } from '../components/Cards';
 import { MemberRow } from '../components/MemberRow';
 
 export const ChairpersonView = () => {
@@ -49,6 +49,12 @@ export const ChairpersonView = () => {
       <div className="carousel-wrap">
         <div className="carousel" id="carousel">
           <PotCard />
+          <ScoreCard />
+          <ContribCard />
+          <LoanCard />
+        </div>
+        <div className="dots">
+          <span className="active"></span><span></span><span></span><span></span>
         </div>
       </div>
 
