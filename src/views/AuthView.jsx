@@ -49,20 +49,97 @@ const FooterLink = ({ text, linkText, onClick }) => (
 
 // ── Role Picker ───────────────────────────────────────────────────────────────
 const RolePicker = ({ setRole, title, subtitle, showWarning }) => (
-  <div className="auth-container">
-    <div className="brand-mark" style={{ width: 60, height: 60, fontSize: 28, marginBottom: 20 }}>P</div>
-    <h1 className="auth-title" style={{ fontFamily: 'Sora' }}>{title}</h1>
-    <p className="auth-subtitle">{subtitle}</p>
-    {showWarning && (
-      <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(255,200,0,0.08)', border: '1px solid var(--gold)', borderRadius: 10, fontSize: 12, color: 'var(--gold)', maxWidth: 360, textAlign: 'center' }}>
-        Demo mode — Clerk &amp; Supabase not yet configured.
+  <div style={{
+    minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'radial-gradient(circle at top right, rgba(23,181,112,0.1) 0%, transparent 40%), radial-gradient(circle at bottom left, rgba(242,193,78,0.05) 0%, transparent 40%), var(--bg)',
+    padding: 20, position: 'relative', overflow: 'hidden'
+  }}>
+    {/* Abstract background shapes */}
+    <div style={{ position: 'absolute', top: '10%', left: '15%', width: 300, height: 300, background: 'var(--green)', filter: 'blur(120px)', opacity: 0.1, borderRadius: '50%', pointerEvents: 'none' }} />
+    <div style={{ position: 'absolute', bottom: '10%', right: '15%', width: 250, height: 250, background: 'var(--gold)', filter: 'blur(100px)', opacity: 0.05, borderRadius: '50%', pointerEvents: 'none' }} />
+    
+    <div style={{
+      background: 'rgba(51, 53, 66, 0.4)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      borderRadius: 24,
+      padding: '40px 30px',
+      width: '100%', maxWidth: 420,
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      boxShadow: '0 24px 40px rgba(0,0,0,0.2)',
+      position: 'relative', zIndex: 10
+    }}>
+      <div style={{
+        width: 70, height: 70, borderRadius: 18,
+        background: 'linear-gradient(135deg, var(--green) 0%, #0d6b47 100%)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: 'Sora', fontWeight: 800, color: '#08251d', fontSize: 32,
+        marginBottom: 24, boxShadow: '0 8px 24px rgba(23,181,112,0.3)',
+        border: '1px solid rgba(255,255,255,0.2)'
+      }}>P</div>
+      
+      <h1 style={{ fontFamily: 'Sora', fontSize: 28, fontWeight: 700, margin: '0 0 8px', color: '#fff' }}>{title}</h1>
+      <p style={{ color: 'var(--text-dim)', fontSize: 15, margin: '0 0 28px', textAlign: 'center', lineHeight: 1.5 }}>{subtitle}</p>
+      
+      {showWarning && (
+        <div style={{
+          marginBottom: 24, padding: '12px 16px', background: 'rgba(242,193,78,0.1)',
+          border: '1px solid rgba(242,193,78,0.2)', borderRadius: 12,
+          display: 'flex', alignItems: 'center', gap: 10, width: '100%'
+        }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)', flexShrink: 0, boxShadow: '0 0 8px var(--gold)' }} />
+          <span style={{ fontSize: 13, color: '#e8cd84', fontWeight: 500, lineHeight: 1.4 }}>
+            Backend APIs not detected. Running in local demo mode.
+          </span>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+        {[
+          { role: 'Member', icon: <UserIcon size={20} />, label: 'Standard Member', desc: 'View pots, request loans' },
+          { role: 'Treasurer', icon: <Landmark size={20} />, label: 'Group Treasurer', desc: 'Approve contributions' },
+          { role: 'Chairperson', icon: <Users size={20} />, label: 'Group Chairperson', desc: 'Manage group rules' },
+          { role: 'Admin', icon: <Shield size={20} />, label: 'System Admin', desc: 'Platform oversight' }
+        ].map((item, idx) => (
+          <button
+            key={item.role}
+            onClick={() => setRole(item.role)}
+            style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              padding: '16px', borderRadius: 16,
+              display: 'flex', alignItems: 'center', gap: 16,
+              cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              textAlign: 'left', color: 'var(--text)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+              e.currentTarget.querySelector('.role-icon').style.color = 'var(--green)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+              e.currentTarget.querySelector('.role-icon').style.color = 'var(--text-faint)';
+            }}
+          >
+            <div className="role-icon" style={{ 
+              width: 42, height: 42, borderRadius: 12, 
+              background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-faint)', transition: 'color 0.2s'
+            }}>
+              {item.icon}
+            </div>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>{item.desc}</div>
+            </div>
+          </button>
+        ))}
       </div>
-    )}
-    <div className="auth-roles" style={{ marginTop: 20 }}>
-      <button className="auth-btn" onClick={() => setRole('Member')}><UserIcon size={18} /> Standard Member</button>
-      <button className="auth-btn" onClick={() => setRole('Treasurer')}><Landmark size={18} /> Group Treasurer</button>
-      <button className="auth-btn" onClick={() => setRole('Chairperson')}><Users size={18} /> Group Chairperson</button>
-      <button className="auth-btn" onClick={() => setRole('Admin')}><Shield size={18} /> System Admin</button>
     </div>
   </div>
 );

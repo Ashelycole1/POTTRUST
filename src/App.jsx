@@ -50,7 +50,6 @@ function AppShellWithData({ role, setRole }) {
 }
 
 function AppShell({ role, setRole }) {
-  const { user } = useUser();
 
   // Determine effective role: prefer Supabase group_member role if available,
   // then fall back to the mock role chosen on the auth screen
