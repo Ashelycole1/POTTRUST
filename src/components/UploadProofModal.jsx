@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, Camera, CreditCard, Smartphone, Building2, Banknote } from 'lucide-react';
+import { X, Upload, Camera, CreditCard, Smartphone, Building2, Banknote, Loader } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { uploadImage, proofStoragePath } from '../lib/supabase';
 
 const PAYMENT_MODES = [
   { id: 'MTN MoMo',      icon: Smartphone,  label: 'MTN MoMo' },
@@ -10,7 +11,7 @@ const PAYMENT_MODES = [
 ];
 
 export const UploadProofModal = () => {
-  const { proofModalOpen, setProofModalOpen, submitProof } = useApp();
+  const { proofModalOpen, setProofModalOpen, submitProof, groupData, userData } = useApp();
 
   const [step, setStep]               = useState(1); // 1 = form, 2 = confirm, 3 = success
   const [mode, setMode]               = useState('');
@@ -20,6 +21,8 @@ export const UploadProofModal = () => {
   const [screenshot, setScreenshot]   = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState(null);
   const [errors, setErrors]           = useState({});
+  const [uploading, setUploading]     = useState(false);
+  const [uploadErr, setUploadErr]     = useState('');
   const fileRef                       = useRef();
 
   if (!proofModalOpen) return null;
@@ -46,8 +49,25 @@ export const UploadProofModal = () => {
     setStep(2);
   };
 
-  const handleSubmit = () => {
-    submitProof({ mode, amount, txnRef, notes, screenshot });
+  const handleSubmit = async () => {
+    setUploadErr('');
+    setUploading(true);
+    let proofUrl = null;
+
+    // Upload screenshot to Supabase Storage if one was selected
+    if (screenshot && groupData?.id && userData?.id) {
+      try {
+        const path = proofStoragePath(groupData.id, userData.id, screenshot);
+        proofUrl = await uploadImage(screenshot, path);
+      } catch (err) {
+        console.warn('[UploadProofModal] Storage upload failed:', err.message);
+        // Non-fatal: we still submit the contribution without the URL
+        setUploadErr('Screenshot could not be uploaded, but your proof will still be submitted.');
+      }
+    }
+
+    await submitProof({ mode, amount, txnRef, notes, screenshot, proofUrl });
+    setUploading(false);
     setStep(3);
   };
 
@@ -55,8 +75,9 @@ export const UploadProofModal = () => {
     setProofModalOpen(false);
     setStep(1);
     setMode(''); setAmount(''); setTxnRef(''); setNotes('');
-    setScreenshot(null); setScreenshotPreview(null); setErrors({});
+    setScreenshot(null); setScreenshotPreview(null); setErrors({}); setUploadErr('');
   };
+
 
   return (
     <div style={{
@@ -211,10 +232,21 @@ export const UploadProofModal = () => {
               )}
             </div>
 
+            {uploadErr && (
+              <p style={{ color: 'var(--gold)', fontSize: 12.5, marginBottom: 12, lineHeight: 1.4 }}>
+                ⚠ {uploadErr}
+              </p>
+            )}
             <div style={{ display: 'flex', gap: 12 }}>
-              <button onClick={() => setStep(1)} style={secondaryBtn}>Edit</button>
-              <button onClick={handleSubmit} style={{ ...primaryBtn, flex: 1 }}>
-                Submit to Treasurer
+              <button onClick={() => setStep(1)} style={secondaryBtn} disabled={uploading}>Edit</button>
+              <button onClick={handleSubmit} style={{ ...primaryBtn, flex: 1, opacity: uploading ? 0.7 : 1 }} disabled={uploading}>
+                {uploading ? (
+                  <>
+                    <div style={{ width: 16, height: 16, border: '2px solid #08251d', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                    Uploading…
+                  </>
+                ) : 'Submit to Treasurer'}
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </button>
             </div>
           </>

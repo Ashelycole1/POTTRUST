@@ -183,6 +183,7 @@ export const AppProvider = ({ children, supabaseData = null }) => {
         amount:       Number(proofData.amount),
         payment_mode: proofData.mode,
         txn_ref:      proofData.txnRef,
+        proof_url:    proofData.proofUrl || null,
         notes:        proofData.notes,
         status:       'PENDING',
       });
@@ -401,6 +402,7 @@ export const AppProvider = ({ children, supabaseData = null }) => {
     <AppContext.Provider value={{
       // User
       displayName,
+      userData:              supabaseData?.userData || null,
       // Contribution
       memberContrib,
       groupPot,
