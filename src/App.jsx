@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { SignedIn, SignedOut } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, useUser } from '@clerk/clerk-react';
 import { DesktopSidebar, MobileBottomNav } from './components/Navigation';
 import { Topbar } from './components/Topbar';
 import { AuthView } from './views/AuthView';
@@ -86,12 +86,13 @@ function AppShell({ role }) {
 // ── Fetches Supabase data, derives role, then renders shell ───────────────────
 function AppShellWithData() {
   const supabaseData = useSupabaseData();
+  const { user } = useUser();
 
   if (supabaseData.loading) return <LoadingScreen />;
 
-  // Derive role from Supabase group_members.role (what they were assigned in the group)
-  // Fall back to 'Member' if the user hasn't been added to any group yet
-  const role = supabaseData.groupMember?.role || 'Member';
+  // Derive role from Clerk publicMetadata first, fall back to Supabase group assignment
+  const clerkRole = user?.publicMetadata?.role;
+  const role = clerkRole || supabaseData.groupMember?.role || 'Member';
 
   return (
     <AppProvider supabaseData={supabaseData}>
