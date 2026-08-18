@@ -36,10 +36,22 @@ export const UsersView = () => {
   const load = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('group_members')
-      .select('id, role, group_id, user_id, groups(name), users(id, first_name, last_name, email, avatar_url, created_at)');
+      .from('users')
+      .select('id, first_name, last_name, email, avatar_url, created_at, group_members(id, role, groups(name))');
     if (error) { console.error(error); setLoading(false); return; }
-    setRows(data || []);
+
+    const mapped = (data || []).map(u => {
+      const gm = u.group_members && u.group_members.length > 0 ? u.group_members[0] : null;
+      return {
+        id: gm?.id || `fake-${u.id}`,
+        user_id: u.id,
+        role: gm?.role || 'Member',
+        groups: gm?.groups || null,
+        users: { ...u, group_members: undefined }
+      };
+    });
+
+    setRows(mapped);
     setLoading(false);
   }, []);
 
