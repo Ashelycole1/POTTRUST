@@ -37,7 +37,7 @@ export const UsersView = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('users')
-      .select('id, first_name, last_name, email, avatar_url, created_at, group_members(id, role, groups(name))');
+      .select('id, first_name, last_name, email, avatar_url, created_at, global_role, group_members(id, role, group_id, groups(name))');
     if (error) { console.error(error); setLoading(false); return; }
 
     const mapped = (data || []).map(u => {
@@ -45,8 +45,9 @@ export const UsersView = () => {
       return {
         id: gm?.id || `fake-${u.id}`,
         user_id: u.id,
-        role: gm?.role || 'Member',
+        role: u.global_role || gm?.role || 'Member',
         groups: gm?.groups || null,
+        group_id: gm?.group_id,
         users: { ...u, group_members: undefined }
       };
     });
@@ -72,22 +73,31 @@ export const UsersView = () => {
     return matchSearch && matchRole;
   });
 
-  // ── Change role in Supabase ──────────────────────────────────────────────
-  const changeRole = async (memberId, newRole) => {
+  const changeRole = async (memberId, userId, newRole) => {
     setSaving(true);
-    const { error } = await supabase
-      .from('group_members')
-      .update({ role: newRole })
-      .eq('id', memberId);
+    
+    // 1. Update global_role in users table
+    const { error: userErr } = await supabase.from('users').update({ global_role: newRole }).eq('id', userId);
+    if (userErr) console.error('[changeRole users]', userErr);
 
-    if (!error) {
-      setRows(prev => prev.map(r => r.id === memberId ? { ...r, role: newRole } : r));
-      if (selected?.id === memberId) setSelected(prev => ({ ...prev, role: newRole }));
-      setSavedId(memberId);
-      setTimeout(() => setSavedId(null), 2000);
-    } else {
-      console.error('[changeRole]', error);
+    // 2. If they have a group member record, update that too
+    if (!memberId.startsWith('fake-')) {
+      const { error: gmErr } = await supabase.from('group_members').update({ role: newRole }).eq('id', memberId);
+      if (gmErr) console.error('[changeRole gm]', gmErr);
+    } else if (newRole !== 'Admin' && newRole !== 'Member') {
+      // 3. Auto-assign to latest group if they are made Chairperson/Treasurer but have no group
+      const { data: latestGroup } = await supabase.from('groups').select('id').order('created_at', { ascending: false }).limit(1).single();
+      if (latestGroup) {
+         await supabase.from('group_members').insert({ group_id: latestGroup.id, user_id: userId, role: newRole });
+      }
     }
+
+    await load();
+    if (selected?.user_id === userId) {
+      setSelected(prev => ({ ...prev, role: newRole }));
+    }
+    setSavedId(userId);
+    setTimeout(() => setSavedId(null), 2000);
     setSaving(false);
   };
 
@@ -204,7 +214,7 @@ export const UsersView = () => {
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <select
                     value={r.role}
-                    onChange={e => changeRole(r.id, e.target.value)}
+                    onChange={e => changeRole(r.id, r.user_id, e.target.value)}
                     disabled={saving}
                     style={{
                       appearance: 'none', background: rc.bg, color: rc.fg,
@@ -283,7 +293,7 @@ export const UsersView = () => {
                     return (
                       <button
                         key={role}
-                        onClick={() => changeRole(selected.id, role)}
+                        onClick={() => changeRole(selected.id, selected.user_id, role)}
                         disabled={saving}
                         style={{
                           background: selected.role === role ? rc2.bg : 'var(--surface)',

@@ -90,9 +90,9 @@ function AppShellWithData() {
 
   if (supabaseData.loading) return <LoadingScreen />;
 
-  // Derive role from Clerk publicMetadata first, fall back to Supabase group assignment
+  // Derive role from Clerk publicMetadata, then Supabase global_role, then group assignment
   const clerkRole = user?.publicMetadata?.role;
-  const role = clerkRole || supabaseData.groupMember?.role || 'Member';
+  const role = clerkRole || supabaseData.userData?.global_role || supabaseData.groupMember?.role || 'Member';
 
   return (
     <AppProvider supabaseData={supabaseData}>
