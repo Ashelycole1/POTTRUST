@@ -10,6 +10,8 @@ const isSupabaseConfigured = () =>
 const AppContext = createContext(null);
 
 export const AppProvider = ({ children, supabaseData = null }) => {
+  // refetch lets us reload live data from Supabase after mutations
+  const refetch = supabaseData?.refetch || (() => {});
   const { user: clerkUser } = useUser();
 
   // ── Derive display name from Clerk (never hardcoded) ─────────────────────
@@ -250,9 +252,20 @@ export const AppProvider = ({ children, supabaseData = null }) => {
   }, [supabaseData]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
-  const addLogEntry = useCallback(async (entry) => {
+  const addLogEntry = useCallback(async (entry, notifyUserId = null) => {
     const local = { id: Date.now(), ...entry, created_at: new Date().toISOString() };
     setActivityLog(prev => [local, ...prev]);
+
+    // Mirror every action as a notification for the current user too
+    const notifEntry = {
+      id:          local.id + '_n',
+      title:       entry.headline?.replace(/<[^>]+>/g, '') || entry.action,
+      description: entry.detail || '',
+      color_hint:  entry.color_hint,
+      is_read:     false,
+      created_at:  local.created_at,
+    };
+    setNotifications(prev => [notifEntry, ...prev]);
 
     if (isSupabaseConfigured() && supabaseData?.groupData?.id) {
       await supabase.from('audit_logs').insert({
@@ -263,6 +276,17 @@ export const AppProvider = ({ children, supabaseData = null }) => {
         detail:     entry.detail,
         color_hint: entry.color_hint,
       });
+
+      // If a specific target user should receive a notification, insert it for them
+      const targetUser = notifyUserId || supabaseData.userData?.id;
+      if (targetUser) {
+        await supabase.from('notifications').insert({
+          user_id:     targetUser,
+          title:       entry.headline?.replace(/<[^>]+>/g, '') || entry.action,
+          description: entry.detail || '',
+          is_read:     false,
+        });
+      }
     }
   }, [supabaseData]);
 
@@ -309,10 +333,14 @@ export const AppProvider = ({ children, supabaseData = null }) => {
         status:       'PENDING',
       });
       if (error) console.error('[submitProof]', error);
+      else {
+        // Re-fetch so Treasurer's Review Queue gets the new submission immediately
+        await refetch();
+      }
     }
 
     setProofModalOpen(false);
-  }, [addLogEntry, displayName, supabaseData]);
+  }, [addLogEntry, displayName, supabaseData, refetch]);
 
   // ── Verify Proof (Treasurer) ──────────────────────────────────────────────
   const verifyProof = useCallback(async (proofId) => {
@@ -328,6 +356,7 @@ export const AppProvider = ({ children, supabaseData = null }) => {
       lastPayment: `Paid via ${proof.mode} ref #${proof.txnRef}`,
     }));
 
+    // Log the event — also notifies the current user (Treasurer)
     await addLogEntry({
       color_hint: 'green',
       headline:   `<b>${proof.memberName}</b> was verified PAID`,
@@ -336,6 +365,7 @@ export const AppProvider = ({ children, supabaseData = null }) => {
     });
 
     if (isSupabaseConfigured()) {
+      // Update the contribution record to PAID
       await supabase
         .from('contributions')
         .update({
@@ -343,14 +373,33 @@ export const AppProvider = ({ children, supabaseData = null }) => {
           reviewed_by: supabaseData?.userData?.id || null,
           reviewed_at: new Date().toISOString(),
         })
-        .eq('txn_ref', proof.txnRef);
+        .eq('id', proofId);
 
+      // Update the group pot total
       await supabase
         .from('groups')
         .update({ total_pot: groupPot + Number(proof.amount) })
         .eq('id', supabaseData?.groupData?.id);
+
+      // Notify the member whose proof was approved (look up their user_id from the contribution)
+      const { data: contrib } = await supabase
+        .from('contributions')
+        .select('user_id')
+        .eq('id', proofId)
+        .single();
+      if (contrib?.user_id) {
+        await supabase.from('notifications').insert({
+          user_id:     contrib.user_id,
+          title:       'Contribution approved ✓',
+          description: `Your UGX ${Number(proof.amount).toLocaleString()} payment has been verified by the Treasurer.`,
+          is_read:     false,
+        });
+      }
+
+      // Reload so everyone sees updated state
+      await refetch();
     }
-  }, [pendingProofs, addLogEntry, groupPot, supabaseData]);
+  }, [pendingProofs, addLogEntry, groupPot, supabaseData, refetch]);
 
   // ── Reject Proof (Treasurer) ──────────────────────────────────────────────
   const rejectProof = useCallback(async (proofId, reason) => {
@@ -368,6 +417,7 @@ export const AppProvider = ({ children, supabaseData = null }) => {
     });
 
     if (isSupabaseConfigured()) {
+      // Update the contribution record to REJECTED
       await supabase
         .from('contributions')
         .update({
@@ -376,9 +426,27 @@ export const AppProvider = ({ children, supabaseData = null }) => {
           reviewed_by:      supabaseData?.userData?.id || null,
           reviewed_at:      new Date().toISOString(),
         })
-        .eq('txn_ref', proof.txnRef);
+        .eq('id', proofId);
+
+      // Notify the member whose proof was rejected
+      const { data: contrib } = await supabase
+        .from('contributions')
+        .select('user_id')
+        .eq('id', proofId)
+        .single();
+      if (contrib?.user_id) {
+        await supabase.from('notifications').insert({
+          user_id:     contrib.user_id,
+          title:       'Contribution proof rejected',
+          description: `Your payment slip was rejected. Reason: ${reason}`,
+          is_read:     false,
+        });
+      }
+
+      // Reload so queue is refreshed
+      await refetch();
     }
-  }, [pendingProofs, addLogEntry, supabaseData]);
+  }, [pendingProofs, addLogEntry, supabaseData, refetch]);
 
   // ── Repay Loan ────────────────────────────────────────────────────────────
   const repayLoan = useCallback(async (repayAmount, mode, txnRef) => {
