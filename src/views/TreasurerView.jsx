@@ -121,13 +121,13 @@ const actionBtn = (bg, color) => ({
 export const TreasurerView = () => {
   const [activeTab, setActiveTab] = useState('review');
   const navigate = useNavigate();
-  const { pendingProofs, setProofModalOpen } = useApp();
+  const { pendingProofs, setProofModalOpen, displayName } = useApp();
 
   return (
     <>
       <div className="greeting">
         <p className="hello">Good morning</p>
-        <p className="name">Alimpa A. Hillary</p>
+        <p className="name">{displayName}</p>
         <span className="badge badge-admin" style={{ marginTop: 8, display: 'inline-block' }}>TREASURER</span>
       </div>
 
@@ -152,7 +152,7 @@ export const TreasurerView = () => {
           )}
         </button>
         <button className={`tab ${activeTab === 'foryou' ? 'active' : ''}`} onClick={() => setActiveTab('foryou')}>For You</button>
-        <button className={`tab ${activeTab === 'members' ? 'active' : ''}`} onClick={() => setActiveTab('members')}>Members</button>
+        <button className="tab" onClick={() => navigate('/members')}>Members</button>
       </div>
 
       {activeTab === 'review' && (
@@ -183,18 +183,7 @@ export const TreasurerView = () => {
             <QuickActionTile icon={Plus}        label="Contribute"  colorClass="qi-green" onClick={() => setProofModalOpen(true)} />
             <QuickActionTile icon={CheckCircle}  label="Verify Proof" colorClass="qi-gold"  onClick={() => setActiveTab('review')} />
             <QuickActionTile icon={Activity}     label="Request Loan" colorClass="qi-green" onClick={() => navigate('/loans')} />
-            <QuickActionTile icon={Users}        label="Group Info"   colorClass="qi-gold"  onClick={() => navigate('/settings')} />
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'members' && (
-        <div className="section tab-panel">
-          <div className="section-head"><h3>All 28 members · Aug cycle</h3><a className="link" href="#">Export</a></div>
-          <div className="member-list">
-            <MemberRow name="Rwothomio Evans"        initials="RE" sub="Chairperson"        status="PAID"    avatarColor="var(--green)" />
-            <MemberRow name="Alimpa A. Hillary (you)" initials="AH" sub="Treasurer"          status="PAID"    avatarColor="var(--green)" />
-            <MemberRow name="Ssenyonjo K."            initials="SK" sub="3 days overdue"     status="OVERDUE" avatarColor="var(--coral)" />
+            <QuickActionTile icon={Users}        label="Group Info"   colorClass="qi-gold"  onClick={() => navigate('/members')} />
           </div>
         </div>
       )}

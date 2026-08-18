@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MemberRow } from '../components/MemberRow';
 import { Activity, ShieldCheck, TrendingUp, Users, DollarSign, Database, Plus, X } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 
 const MetricCard = ({ icon: Icon, label, value, trend, trendColor }) => (
   <div style={{
@@ -24,20 +26,21 @@ const MetricCard = ({ icon: Icon, label, value, trend, trendColor }) => (
 );
 
 export const AdminOverview = () => {
+  const { displayName } = useApp();
   return (
     <>
       <div className="greeting">
         <p className="hello">System Admin</p>
-        <p className="name">Platform Overview</p>
+        <p className="name">{displayName}</p>
         <span className="badge badge-admin" style={{ marginTop: 8, display: 'inline-block' }}>GOD MODE</span>
       </div>
 
       <div style={{
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24
       }}>
-        <MetricCard icon={Users} label="Total Users" value="34,502" trend="+1,204 this month" />
-        <MetricCard icon={Database} label="Active Groups" value="1,204" trend="+42 this month" />
-        <MetricCard icon={Activity} label="Transactions" value="142k" trend="Processed this month" />
+        <MetricCard icon={Users} label="Total Users" value="-" trend="Live tracking..." />
+        <MetricCard icon={Database} label="Active Groups" value="-" trend="Live tracking..." />
+        <MetricCard icon={Activity} label="Transactions" value="-" trend="Processed this month" />
         <MetricCard icon={ShieldCheck} label="System Health" value="99.9%" trend="All systems operational" />
       </div>
 
@@ -48,7 +51,6 @@ export const AdminOverview = () => {
         </div>
         
         <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--line)', padding: 16 }}>
-          {/* Mock chart area */}
           <div style={{ height: 180, display: 'flex', alignItems: 'flex-end', gap: 8, paddingBottom: 8, borderBottom: '1px solid var(--line)' }}>
              {[30, 45, 20, 60, 80, 50, 90, 70, 40, 65, 85, 100, 75, 55].map((h, i) => (
                 <div key={i} style={{ flex: 1, background: 'var(--green-deep)', height: `${h}%`, borderRadius: '4px 4px 0 0', position: 'relative' }}>
@@ -149,18 +151,28 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
 
 export const AdminGroupsView = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [groups, setGroups] = useState([]);
   const navigate = useNavigate();
+  const { displayName } = useApp();
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      const { data } = await supabase.from('groups').select('*').order('created_at', { ascending: false });
+      if (data) setGroups(data);
+    };
+    fetchGroups();
+  }, []);
 
   return (
     <>
       <div className="greeting">
         <p className="hello">System Admin</p>
-        <p className="name">All Groups</p>
+        <p className="name">{displayName}</p>
       </div>
 
       <div className="section">
         <div className="section-head">
-          <h3>1,204 Active Groups</h3>
+          <h3>{groups.length} Active Groups</h3>
           <div style={{ display: 'flex', gap: 8 }}>
              <input type="text" placeholder="Search..." style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: '6px 12px', fontSize: 13, color: 'var(--text)', outline: 'none' }} />
              <button 
@@ -173,42 +185,22 @@ export const AdminGroupsView = () => {
         </div>
         
         <div className="member-list">
-          <MemberRow 
-            name="Katonga Traders SACCO" 
-            initials="KT" 
-            sub="28 Members · Established 2018" 
-            status="HEALTHY" 
-            avatarColor="var(--green)" 
-            actionLabel="Manage"
-            onAction={() => navigate('/settings')}
-          />
-          <MemberRow 
-            name="Bwaise Women's Group" 
-            initials="BW" 
-            sub="15 Members · Established 2021" 
-            status="HEALTHY" 
-            avatarColor="var(--green)" 
-            actionLabel="Manage"
-            onAction={() => navigate('/settings')}
-          />
-          <MemberRow 
-            name="Kisekka Mechanics" 
-            initials="KM" 
-            sub="110 Members · High default risk flagged" 
-            status="AT RISK" 
-            avatarColor="var(--coral)" 
-            actionLabel="Manage"
-            onAction={() => navigate('/settings')}
-          />
-          <MemberRow 
-            name="Owino Market Vendors" 
-            initials="OV" 
-            sub="250 Members · Established 2019" 
-            status="HEALTHY" 
-            avatarColor="var(--green)" 
-            actionLabel="Manage"
-            onAction={() => navigate('/settings')}
-          />
+          {groups.length > 0 ? (
+            groups.map(group => (
+              <MemberRow 
+                key={group.id}
+                name={group.name} 
+                initials={group.name.substring(0, 2).toUpperCase()} 
+                sub={`Pot: UGX ${(group.total_pot || 0).toLocaleString()}`} 
+                status="HEALTHY" 
+                avatarColor="var(--green)" 
+                actionLabel="Manage"
+                onAction={() => navigate('/settings')}
+              />
+            ))
+          ) : (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', padding: '10px 0' }}>No groups found.</div>
+          )}
         </div>
       </div>
 

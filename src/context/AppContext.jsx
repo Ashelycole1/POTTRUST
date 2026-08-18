@@ -480,6 +480,7 @@ export const AppProvider = ({ children, supabaseData = null }) => {
       // Group
       groupData:             supabaseData?.groupData || null,
       groupMember:           supabaseData?.groupMember || null,
+      groupContributions:    supabaseData?.contributions || [],
     }}>
       {children}
     </AppContext.Provider>

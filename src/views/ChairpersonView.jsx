@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PotCard, ScoreCard, ContribCard, LoanCard } from '../components/Cards';
 import { MemberRow } from '../components/MemberRow';
 import { useApp } from '../context/AppContext';
@@ -65,6 +66,7 @@ export const ChairpersonView = () => {
   const [toast, setToast]         = useState('');
   const [rejectTarget, setRejectTarget] = useState(null); // { id, name }
   const [fineTarget, setFineTarget]     = useState(null); // { id, name }
+  const navigate = useNavigate();
 
   const {
     pendingLoanRequests,
@@ -72,6 +74,7 @@ export const ChairpersonView = () => {
     approveLoan,
     rejectLoan,
     issueFine,
+    displayName,
   } = useApp();
 
   const showToast = (msg) => {
@@ -100,7 +103,7 @@ export const ChairpersonView = () => {
     <>
       <div className="greeting">
         <p className="hello">Good morning</p>
-        <p className="name">Rwothomio Evans</p>
+        <p className="name">{displayName}</p>
         <span className="badge badge-admin" style={{ marginTop: 8, display: 'inline-block' }}>CHAIRPERSON</span>
       </div>
 
@@ -139,7 +142,7 @@ export const ChairpersonView = () => {
             </span>
           )}
         </button>
-        <button className={`tab ${activeTab === 'members' ? 'active' : ''}`} onClick={() => setActiveTab('members')}>Members</button>
+        <button className="tab" onClick={() => navigate('/members')}>Members</button>
       </div>
 
       {activeTab === 'loans' && (
@@ -208,19 +211,6 @@ export const ChairpersonView = () => {
                 <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>No overdue contributions</p>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'members' && (
-        <div className="section tab-panel">
-          <div className="section-head"><h3>All 28 members</h3></div>
-          <div className="member-list">
-            <MemberRow name="Rwothomio Evans (you)" initials="RE" sub="Chairperson" status="PAID" avatarColor="var(--green)" />
-            <MemberRow name="Alimpa A. Hillary" initials="AH" sub="Treasurer" status="PAID" avatarColor="var(--green)" />
-            <MemberRow name="Niwasiima A." initials="NA" sub="Member · Paid" status="PAID" avatarColor="var(--green)" />
-            <MemberRow name="Ssenyonjo K." initials="SK" sub="Member · 3 days overdue" status="OVERDUE" avatarColor="var(--coral)" />
-            <MemberRow name="Onyango J. Steven" initials="OJ" sub="Member · Slip under review" status="PENDING" avatarColor="var(--gold)" />
           </div>
         </div>
       )}

@@ -12,13 +12,16 @@ import { DollarSign, CheckCircle, Landmark, Users } from 'lucide-react';
 export const MemberView = () => {
   const [activeTab, setActiveTab] = useState('foryou');
   const navigate = useNavigate();
-  const { setProofModalOpen, setLoanRequestModalOpen, activityLog, loansList } = useApp();
+  const { setProofModalOpen, setLoanRequestModalOpen, activityLog, loansList, displayName, groupContributions } = useApp();
+
+  // Sort contributions: group contributions by status for 'foryou' tab or just show all
+  const statusColors = { PAID: 'var(--green)', PENDING: 'var(--gold)', OVERDUE: 'var(--coral)' };
 
   return (
     <>
       <div className="greeting">
         <p className="hello">Good morning</p>
-        <p className="name">Ashelycole</p>
+        <p className="name">{displayName}</p>
       </div>
 
       <div className="carousel-wrap">
@@ -35,7 +38,7 @@ export const MemberView = () => {
 
       <div className="tabs">
         <button className={`tab ${activeTab === 'foryou' ? 'active' : ''}`} onClick={() => setActiveTab('foryou')}>For You</button>
-        <button className={`tab ${activeTab === 'members' ? 'active' : ''}`} onClick={() => setActiveTab('members')}>Members</button>
+        <button className={`tab ${activeTab === 'members' ? 'active' : ''}`} onClick={() => navigate('/members')}>Members</button>
         <button className={`tab ${activeTab === 'loans' ? 'active' : ''}`} onClick={() => setActiveTab('loans')}>Loans</button>
         <button className={`tab ${activeTab === 'activity' ? 'active' : ''}`} onClick={() => setActiveTab('activity')}>Activity</button>
       </div>
@@ -52,25 +55,25 @@ export const MemberView = () => {
 
           <div className="section-head" style={{ marginTop: 26 }}>
             <h3>This cycle's status</h3>
-            <a className="link" href="#">See matrix</a>
+            <span className="link" onClick={() => navigate('/members')} style={{ cursor: 'pointer' }}>See matrix</span>
           </div>
           <div className="member-list">
-            <MemberRow name="Niwasiima A. (you)" initials="NA" sub="Paid 12 Jul via MTN MoMo" status="PAID" avatarColor="var(--green)" />
-            <MemberRow name="Egabo Aaron" initials="EA" sub="Slip uploaded, awaiting review" status="PENDING" avatarColor="var(--gold)" />
-            <MemberRow name="Natozo Martha" initials="NM" sub="Cycle closed 2 days ago" status="OVERDUE" avatarColor="var(--coral)" />
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'members' && (
-        <div className="section tab-panel">
-          <div className="section-head"><h3>All 28 members · Aug cycle</h3><a className="link" href="#">Export</a></div>
-          <div className="member-list">
-            <MemberRow name="Rwothomio Evans" initials="RE" sub="Chairperson" status="PAID" avatarColor="var(--green)" />
-            <MemberRow name="Alimpa A. Hillary" initials="AH" sub="Treasurer" status="PAID" avatarColor="var(--green)" />
-            <MemberRow name="Onyango J. Steven" initials="OJ" sub="Slip under review" status="PENDING" avatarColor="var(--gold)" />
-            <MemberRow name="Ssenyonjo K." initials="SK" sub="3 days overdue" status="OVERDUE" avatarColor="var(--coral)" />
-            <MemberRow name="Tumwine N." initials="TN" sub="Paid 11 Jul via Airtel Money" status="PAID" avatarColor="var(--green)" />
+            {groupContributions?.length > 0 ? groupContributions.slice(0, 5).map(c => {
+              const uName = `${c.users?.first_name || ''} ${c.users?.last_name || ''}`.trim() || 'Unknown';
+              const inits = `${c.users?.first_name?.[0] || ''}${c.users?.last_name?.[0] || ''}`.toUpperCase() || '?';
+              return (
+                <MemberRow 
+                  key={c.id} 
+                  name={uName} 
+                  initials={inits} 
+                  sub={c.status === 'PAID' ? `Paid via ${c.payment_mode || 'Cash'}` : c.status === 'PENDING' ? 'Awaiting review' : 'Overdue'} 
+                  status={c.status} 
+                  avatarColor={statusColors[c.status] || 'var(--text-dim)'} 
+                />
+              );
+            }) : (
+              <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', padding: '10px 0' }}>No contributions recorded yet.</div>
+            )}
           </div>
         </div>
       )}
