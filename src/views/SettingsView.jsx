@@ -128,7 +128,6 @@ const UserProfile = () => {
     ? new Date(userData.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
     : '';
 
-  // Upload avatar to Supabase Storage then update Clerk profile image
   const handleAvatar = async (e) => {
     const f = e.target.files[0];
     if (!f || !user) return;
@@ -138,16 +137,16 @@ const UserProfile = () => {
       // Preview immediately
       setAvatarPreview(URL.createObjectURL(f));
 
-      // Upload to Supabase storage
+      // Upload to Supabase storage (bucket: pottrust_uploads)
       const ext  = f.name.split('.').pop();
       const path = `avatars/${user.id}.${ext}`;
       const { error: upErr } = await supabase.storage
-        .from('avatars')
-        .upload(path, f, { upsert: true });
+        .from('pottrust_uploads')
+        .upload(path, f, { upsert: true, contentType: f.type });
 
       if (upErr) throw upErr;
 
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from('pottrust_uploads').getPublicUrl(path);
       const publicUrl = urlData?.publicUrl;
 
       if (publicUrl) {
@@ -159,7 +158,7 @@ const UserProfile = () => {
       }
     } catch (err) {
       console.error('[avatar upload]', err);
-      setError('Photo upload failed. Try again.');
+      setError('Photo upload failed: ' + (err.message || err));
     } finally {
       setUploadingAvatar(false);
     }
@@ -329,28 +328,32 @@ const ProfileSettings = ({ groupId }) => {
     });
   }, [groupId]);
 
-  const uploadImage = async (file, bucket, path) => {
-    const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+  const uploadGroupImage = async (file, path) => {
+    const { error } = await supabase.storage
+      .from('pottrust_uploads')
+      .upload(path, file, { upsert: true, contentType: file.type });
     if (error) throw error;
-    return supabase.storage.from(bucket).getPublicUrl(path).data?.publicUrl;
+    return supabase.storage.from('pottrust_uploads').getPublicUrl(path).data?.publicUrl;
   };
 
   const handleLogo = async (e) => {
     const f = e.target.files[0]; if (!f) return;
     setLogoPreview(URL.createObjectURL(f));
     try {
-      const url = await uploadImage(f, 'group-assets', `logos/${groupId}`);
+      const ext = f.name.split('.').pop();
+      const url = await uploadGroupImage(f, `logos/${groupId}.${ext}`);
       if (url) { setLogoPreview(url); await supabase.from('groups').update({ logo_url: url }).eq('id', groupId); }
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error('[logo upload]', err); }
   };
 
   const handleBanner = async (e) => {
     const f = e.target.files[0]; if (!f) return;
     setBannerPreview(URL.createObjectURL(f));
     try {
-      const url = await uploadImage(f, 'group-assets', `banners/${groupId}`);
+      const ext = f.name.split('.').pop();
+      const url = await uploadGroupImage(f, `banners/${groupId}.${ext}`);
       if (url) { setBannerPreview(url); await supabase.from('groups').update({ banner_url: url }).eq('id', groupId); }
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error('[banner upload]', err); }
   };
 
   const save = async () => {

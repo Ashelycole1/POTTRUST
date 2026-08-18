@@ -3,16 +3,25 @@ import { Bell, Upload } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const Topbar = ({ role }) => {
-  const { setNotificationsOpen, notifications, groupName } = useApp();
+  const { setNotificationsOpen, notifications, groupName, groupData } = useApp();
   const unreadCount = notifications.filter(n => !n.read).length;
+  const logoUrl = groupData?.logo_url;
 
   return (
     <div className="topbar">
       <div className="brand" id="mobileBrand">
-        <div className="brand-mark">P</div>
+        {role !== 'Admin' && logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={groupName}
+            style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
+          />
+        ) : (
+          <div className="brand-mark">P</div>
+        )}
         <div>
-          <div className="brand-name">PotTrust</div>
-          <div className="brand-sub">{role === 'Admin' ? 'Admin Portal' : (groupName || 'None')}</div>
+          <div className="brand-name">{role !== 'Admin' && groupName ? groupName : 'PotTrust'}</div>
+          <div className="brand-sub">{role === 'Admin' ? 'Admin Portal' : (groupName ? 'SACCO Workspace' : 'None')}</div>
         </div>
       </div>
       <div className="top-actions">

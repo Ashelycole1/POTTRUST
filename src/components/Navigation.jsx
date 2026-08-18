@@ -7,7 +7,8 @@ import { useClerk } from '@clerk/clerk-react';
 export const DesktopSidebar = ({ role }) => {
   const location = useLocation();
   const { signOut } = useClerk();
-  const { groupName } = useApp();
+  const { groupName, groupData } = useApp();
+  const logoUrl = groupData?.logo_url;
   
   const getNavItems = () => {
     const base = [
@@ -32,10 +33,18 @@ export const DesktopSidebar = ({ role }) => {
   return (
     <nav className="desktop-side">
       <div className="brand">
-        <div className="brand-mark">P</div>
+        {role !== 'Admin' && logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={groupName}
+            style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
+          />
+        ) : (
+          <div className="brand-mark">P</div>
+        )}
         <div>
-          <div className="brand-name">PotTrust</div>
-          <div className="brand-sub">{role === 'Admin' ? 'Admin Portal' : (groupName || 'None')}</div>
+          <div className="brand-name">{role !== 'Admin' && groupName ? groupName : 'PotTrust'}</div>
+          <div className="brand-sub">{role === 'Admin' ? 'Admin Portal' : (groupName ? 'SACCO Workspace' : 'None')}</div>
         </div>
       </div>
       {getNavItems().map(item => (
