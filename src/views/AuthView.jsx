@@ -91,11 +91,17 @@ const ClerkAuthForm = () => {
       const result = await signIn.create({ identifier: email, password });
       if (result.status === 'complete') {
         await siSetActive({ session: result.createdSessionId });
-        // Role is derived from Supabase on load — no manual role pick needed
+      } else {
+        setError(`Sign in incomplete. Status: ${result.status}. Please check your account.`);
       }
     } catch (err) {
       setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Sign in failed. Check your credentials.');
-    } finally { setLoading(false); }
+    } finally { 
+      // Prevent React state warning on unmount
+      if (document.body.contains(e.target)) {
+        setLoading(false); 
+      }
+    }
   };
 
   const handleSignUp = async (e) => {

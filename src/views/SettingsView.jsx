@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import {
   Camera, Save, Users, DollarSign, Bell, Shield,
   MapPin, Phone, Mail, Globe, Trash2, UserPlus, User, Lock
@@ -85,8 +85,9 @@ const Toggle = ({ value, onChange, label, sub }) => (
 );
 
 // ── Personal Profile ──────────────────────────────────────────────────────────
-const PersonalProfile = () => {
+const UserProfile = () => {
   const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
   const { userData } = useApp();
   const [saved, setSaved]   = useState(false);
   const [loading, setLoading] = useState(false);
@@ -285,6 +286,15 @@ const PersonalProfile = () => {
       </Card>
 
       <SaveBtn onClick={save} saved={saved} loading={loading} />
+
+      <Card>
+        <button 
+          onClick={() => signOut()}
+          style={{ width: '100%', background: 'none', border: '1px solid var(--coral)', color: 'var(--coral)', padding: 14, borderRadius: 12, fontWeight: 600, cursor: 'pointer' }}
+        >
+          Sign Out
+        </button>
+      </Card>
     </>
   );
 };
@@ -733,7 +743,7 @@ export const SettingsView = ({ role }) => {
 
   const renderTab = () => {
     switch (activeTab) {
-      case 'personal':      return <PersonalProfile />;
+      case 'personal':      return <UserProfile />;
       case 'contributions': return <ContributionSettings groupId={effectiveGroupId} />;
       case 'fines':         return <FinesSettings />;
       case 'members':       return <MembersSettings groupId={effectiveGroupId} />;

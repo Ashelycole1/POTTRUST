@@ -2,9 +2,11 @@ import React from 'react';
 import { Home, Users, Landmark, TrendingUp, FileText, Settings, Plus, Activity } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { useClerk } from '@clerk/clerk-react';
 
 export const DesktopSidebar = ({ role }) => {
   const location = useLocation();
+  const { signOut } = useClerk();
   
   const getNavItems = () => {
     const base = [
@@ -40,6 +42,15 @@ export const DesktopSidebar = ({ role }) => {
           <item.icon size={18} />&nbsp;&nbsp;{item.label}
         </Link>
       ))}
+
+      <div style={{ flex: 1 }} />
+      <button 
+        onClick={() => signOut()}
+        className="side-link" 
+        style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: 'var(--coral)', marginTop: 'auto' }}
+      >
+        Sign Out
+      </button>
     </nav>
   );
 };
