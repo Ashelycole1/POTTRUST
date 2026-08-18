@@ -4,7 +4,7 @@ import { TrendingUp, FileText, Plus, Upload, Download, Calendar } from 'lucide-r
 import { useApp } from '../context/AppContext';
 
 export const PotCard = () => {
-  const { groupPot, setProofModalOpen } = useApp();
+  const { groupPot, setProofModalOpen, groupData } = useApp();
   const navigate = useNavigate();
   return (
     <div className="card card-pot">
@@ -13,7 +13,7 @@ export const PotCard = () => {
       <div className="card-value" style={{ fontFamily: 'IBM Plex Mono' }}>
         UGX {groupPot.toLocaleString()}
       </div>
-      <div className="card-meta">28 members · Aug cycle</div>
+      <div className="card-meta">{groupData?.member_count || 1} members · {new Date().toLocaleString('default', { month: 'short' })} cycle</div>
       <div className="card-actions">
         <button onClick={() => setProofModalOpen(true)}><Download size={18} /><span>Contribute</span></button>
         <div className="divider"></div>
@@ -102,7 +102,7 @@ export const LoanCard = () => {
   <div className="card card-loan">
     <div className="card-label">Active loan</div>
     <div className="card-value" style={{ fontFamily: 'IBM Plex Mono' }}>UGX {memberLoan.outstanding.toLocaleString()}</div>
-    <div className="card-meta">Next repayment: UGX {memberLoan.nextRepayment.toLocaleString()} A 12 Aug</div>
+    <div className="card-meta">Next repayment: UGX {memberLoan.nextRepayment.toLocaleString()} (this cycle)</div>
     <div className="card-actions">
       <button onClick={() => setLoanRepayModalOpen(true)}><Download size={18} /><span>Repay</span></button>
       <div className="divider"></div>
