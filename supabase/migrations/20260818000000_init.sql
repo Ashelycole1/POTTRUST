@@ -234,6 +234,11 @@ alter table public.audit_logs      enable row level security;
 alter table public.notifications   enable row level security;
 
 -- ── USER POLICIES ────────────────────────────────────────────────────────────
+drop policy if exists "users: read own"              on public.users;
+drop policy if exists "users: insert own"            on public.users;
+drop policy if exists "users: update own"            on public.users;
+drop policy if exists "users: group members can read" on public.users;
+
 create policy "users: read own"
   on public.users for select
   using (auth.uid()::text = clerk_id);
@@ -260,6 +265,9 @@ create policy "users: group members can read"
   );
 
 -- ── GROUP POLICIES ───────────────────────────────────────────────────────────
+drop policy if exists "groups: members can read"       on public.groups;
+drop policy if exists "groups: chairperson can update" on public.groups;
+
 create policy "groups: members can read"
   on public.groups for select
   using (
@@ -284,6 +292,8 @@ create policy "groups: chairperson can update"
   );
 
 -- ── GROUP MEMBERS POLICIES ───────────────────────────────────────────────────
+drop policy if exists "group_members: read own group" on public.group_members;
+
 create policy "group_members: read own group"
   on public.group_members for select
   using (
@@ -296,6 +306,10 @@ create policy "group_members: read own group"
   );
 
 -- ── CONTRIBUTIONS POLICIES ───────────────────────────────────────────────────
+drop policy if exists "contributions: members read"     on public.contributions;
+drop policy if exists "contributions: self insert"      on public.contributions;
+drop policy if exists "contributions: treasurer update" on public.contributions;
+
 create policy "contributions: members read"
   on public.contributions for select
   using (
@@ -330,6 +344,10 @@ create policy "contributions: treasurer update"
   );
 
 -- ── LOANS POLICIES ───────────────────────────────────────────────────────────
+drop policy if exists "loans: members read"      on public.loans;
+drop policy if exists "loans: self insert"       on public.loans;
+drop policy if exists "loans: chair/admin update" on public.loans;
+
 create policy "loans: members read"
   on public.loans for select
   using (
@@ -364,6 +382,9 @@ create policy "loans: chair/admin update"
   );
 
 -- ── LOAN REPAYMENTS POLICIES ─────────────────────────────────────────────────
+drop policy if exists "loan_repayments: members read own group" on public.loan_repayments;
+drop policy if exists "loan_repayments: self insert"            on public.loan_repayments;
+
 create policy "loan_repayments: members read own group"
   on public.loan_repayments for select
   using (
@@ -387,6 +408,9 @@ create policy "loan_repayments: self insert"
   );
 
 -- ── FINES POLICIES ───────────────────────────────────────────────────────────
+drop policy if exists "fines: members read"       on public.fines;
+drop policy if exists "fines: chair/admin insert" on public.fines;
+
 create policy "fines: members read"
   on public.fines for select
   using (
@@ -411,6 +435,8 @@ create policy "fines: chair/admin insert"
   );
 
 -- ── TRUST SCORES POLICIES ────────────────────────────────────────────────────
+drop policy if exists "trust_scores: members read" on public.trust_scores;
+
 create policy "trust_scores: members read"
   on public.trust_scores for select
   using (
@@ -423,6 +449,9 @@ create policy "trust_scores: members read"
   );
 
 -- ── AUDIT LOGS POLICIES ──────────────────────────────────────────────────────
+drop policy if exists "audit_logs: members read"  on public.audit_logs;
+drop policy if exists "audit_logs: service insert" on public.audit_logs;
+
 create policy "audit_logs: members read"
   on public.audit_logs for select
   using (
@@ -436,9 +465,12 @@ create policy "audit_logs: members read"
 
 create policy "audit_logs: service insert"
   on public.audit_logs for insert
-  with check (true); -- Allow all inserts; RLS on reads protects the data
+  with check (true);
 
 -- ── NOTIFICATIONS POLICIES ───────────────────────────────────────────────────
+drop policy if exists "notifications: read own"   on public.notifications;
+drop policy if exists "notifications: update own" on public.notifications;
+
 create policy "notifications: read own"
   on public.notifications for select
   using (
@@ -460,44 +492,41 @@ create policy "notifications: update own"
   );
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- STORAGE BUCKETS
--- Run these via: Supabase Dashboard → Storage → New Bucket (if SQL doesn't work)
--- OR paste the insert below into the SQL editor.
+-- STORAGE BUCKET
 -- ─────────────────────────────────────────────────────────────────────────────
-
--- Main uploads bucket (profile photos, logos, payment proofs)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'pottrust_uploads',
   'pottrust_uploads',
-  true,               -- public: images are accessible via a URL without auth
-  5242880,            -- 5 MB max per file
+  true,
+  5242880,
   array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic']
 )
 on conflict (id) do nothing;
 
 -- ── STORAGE RLS POLICIES ─────────────────────────────────────────────────────
+drop policy if exists "storage: authenticated upload" on storage.objects;
+drop policy if exists "storage: owner update"         on storage.objects;
+drop policy if exists "storage: owner delete"         on storage.objects;
+drop policy if exists "storage: public read"          on storage.objects;
 
--- Any authenticated user can upload
 create policy "storage: authenticated upload"
   on storage.objects for insert
   to authenticated
   with check (bucket_id = 'pottrust_uploads');
 
--- Owner can update their own file
 create policy "storage: owner update"
   on storage.objects for update
   to authenticated
   using (bucket_id = 'pottrust_uploads' and auth.uid() = owner);
 
--- Owner can delete their own file
 create policy "storage: owner delete"
   on storage.objects for delete
   to authenticated
   using (bucket_id = 'pottrust_uploads' and auth.uid() = owner);
 
--- Anyone (including anonymous) can view/download (public bucket)
 create policy "storage: public read"
   on storage.objects for select
   to public
   using (bucket_id = 'pottrust_uploads');
+
