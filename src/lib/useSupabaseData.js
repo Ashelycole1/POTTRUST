@@ -25,6 +25,7 @@ export function useSupabaseData() {
   const [auditLogs, setAuditLogs]       = useState([]);
   const [notifications, setNotifs]      = useState([]);
   const [trustScore, setTrustScore]     = useState(null);
+  const [groupRequests, setGroupRequests] = useState([]);
 
   const [myContrib, setMyContrib]       = useState(null);
 
@@ -64,6 +65,17 @@ export function useSupabaseData() {
     if (gmErr && gmErr.code !== 'PGRST116') throw gmErr;
     setGroupMember(gm || null);
     setGroupData(gm?.groups || null);
+
+    // Fetch group requests (try-catch because table might not be created yet)
+    try {
+      if (dbUser.global_role === 'Admin') {
+        const { data: reqs } = await supabase.from('group_requests').select('*, users(first_name, last_name)').order('created_at', { ascending: false }).limit(50);
+        setGroupRequests(reqs || []);
+      } else {
+        const { data: reqs } = await supabase.from('group_requests').select('*').eq('user_id', dbUser.id).order('created_at', { ascending: false }).limit(5);
+        setGroupRequests(reqs || []);
+      }
+    } catch (e) { console.warn('group_requests fetch failed', e); }
 
     if (!gm) return;
 
@@ -127,7 +139,23 @@ export function useSupabaseData() {
       .eq('group_id', gid)
       .order('computed_at', { ascending: false })
       .limit(4);
-    if (ts && ts.length > 0) setTrustScore(ts[0]);
+    if (ts && ts.length > 0) {
+      setTrustScore(ts[0]);
+    } else {
+      // Mock trust score if none in DB
+      const userContribs = (contribs || []).filter(c => c.user_id === dbUser.id);
+      const paidContribs = userContribs.filter(c => c.status === 'PAID');
+      const pendingUploads = userContribs.filter(c => c.status === 'PENDING').length;
+      setTrustScore({
+        streak: paidContribs.length,
+        loanRepayments: '0/0',
+        pendingProofs: pendingUploads,
+        finesIssued: 0,
+        lateContributions: 0,
+        tips: paidContribs.length > 0 ? [{ tip: 'Maintain your streak', impact: 'High impact on score', color: 'var(--green)' }] : [],
+        history: [{ cycle: 'Current', score: 750, change: '+0' }]
+      });
+    }
 
   }, []);
 
@@ -166,6 +194,7 @@ export function useSupabaseData() {
     auditLogs,
     notifications,
     trustScore,
+    groupRequests,
     refetch: () => userData && fetchDashboard(userData),
   };
 }

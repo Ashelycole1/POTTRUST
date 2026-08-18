@@ -83,6 +83,8 @@ function AppShell({ role }) {
   );
 }
 
+import { OnboardingView } from './views/OnboardingView';
+
 // ── Fetches Supabase data, derives role, then renders shell ───────────────────
 function AppShellWithData() {
   const supabaseData = useSupabaseData();
@@ -96,10 +98,15 @@ function AppShellWithData() {
 
   return (
     <AppProvider supabaseData={supabaseData}>
-      <AppShell role={role} />
+      {role !== 'Admin' && !supabaseData.groupData ? (
+        <OnboardingView />
+      ) : (
+        <AppShell role={role} />
+      )}
     </AppProvider>
   );
 }
+
 
 // ── Root component ────────────────────────────────────────────────────────────
 function App() {

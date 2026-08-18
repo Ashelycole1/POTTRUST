@@ -337,7 +337,22 @@ export const AdminGroupsView = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [groups, setGroups] = useState([]);
   const navigate = useNavigate();
-  const { displayName } = useApp();
+  const { displayName, groupRequests, userData, refetch } = useApp();
+  
+  const pendingRequests = (groupRequests || []).filter(r => r.status === 'PENDING');
+
+  const handleApprove = async (reqId) => {
+    try {
+      const { error } = await supabase.rpc('approve_group_request', { 
+        req_id: reqId, admin_user_id: userData.id 
+      });
+      if (error) throw error;
+      await fetchGroups();
+      await refetch();
+    } catch (e) {
+      alert(e.message || 'Failed to approve request. Did you run the SQL migration?');
+    }
+  };
 
   const fetchGroups = async () => {
     const { data } = await supabase.from('groups').select('*').order('created_at', { ascending: false });
@@ -368,6 +383,32 @@ export const AdminGroupsView = () => {
              </button>
           </div>
         </div>
+
+        {pendingRequests.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <h4 style={{ fontSize: 12, fontWeight: 600, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
+              Pending SACCO Requests ({pendingRequests.length})
+            </h4>
+            <div className="member-list" style={{ border: '1px solid var(--gold-deep)', background: 'var(--surface)' }}>
+              {pendingRequests.map(req => (
+                <div key={req.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--line)' }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{req.sacco_name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4 }}>
+                      Requested by {req.users?.first_name} {req.users?.last_name}
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleApprove(req.id)}
+                    style={{ background: 'var(--green)', color: '#08251d', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Approve
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         <div className="member-list">
           {groups.length > 0 ? (

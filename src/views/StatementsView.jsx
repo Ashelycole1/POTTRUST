@@ -2,19 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Download, Calendar, Lock, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
-// ── Statement row component ───────────────────────────────────────────────────
-const StatementRow = ({ title, date, size, type = 'PDF', onDownload }) => {
+const StatementRow = ({ title, date, size, type = 'CSV', data, onDownload }) => {
   const [status, setStatus] = useState('idle'); // idle | downloading | done
 
   const handleDownload = () => {
     if (status !== 'idle') return;
     setStatus('downloading');
-    // Simulate PDF generation (real implementation would call a backend/edge function)
+    
     setTimeout(() => {
+      // Generate CSV
+      let csvContent = "Date,Amount,Mode,Reference,Status\n";
+      if (data && data.length > 0) {
+        data.forEach(row => {
+          const dt = new Date(row.submitted_at || row.created_at).toLocaleDateString('en-GB');
+          const amt = row.amount || 0;
+          const mode = row.payment_mode || 'N/A';
+          const ref = row.txn_ref || 'N/A';
+          const stat = row.status || 'UNKNOWN';
+          csvContent += `${dt},${amt},${mode},${ref},${stat}\n`;
+        });
+      } else {
+        csvContent += "No records found\n";
+      }
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${title.replace(/\s+/g, '_')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
       setStatus('done');
       if (onDownload) onDownload();
       setTimeout(() => setStatus('idle'), 2000);
-    }, 1200);
+    }, 600);
   };
 
   return (
@@ -86,14 +109,16 @@ export const StatementsView = ({ role }) => {
     title: `${c.cycle_label || 'Contribution'} Statement`,
     date: fmtGenerated(c.submitted_at || c.created_at),
     size: null,
+    data: [c] // Pass just the one contribution
   }));
 
   // Group statements: one per cycle (all contributions)
   const cycleMap = {};
   (groupContributions || []).forEach(c => {
     const label = c.cycle_label || 'Unknown Cycle';
-    if (!cycleMap[label]) cycleMap[label] = { label, count: 0, latest: c.submitted_at };
+    if (!cycleMap[label]) cycleMap[label] = { label, count: 0, latest: c.submitted_at, data: [] };
     cycleMap[label].count += 1;
+    cycleMap[label].data.push(c);
     if (new Date(c.submitted_at) > new Date(cycleMap[label].latest)) {
       cycleMap[label].latest = c.submitted_at;
     }
@@ -103,6 +128,7 @@ export const StatementsView = ({ role }) => {
     title: `${groupData?.name || 'Group'} — ${cycle.label} Reconciliation`,
     date: fmtGenerated(cycle.latest),
     size: null,
+    data: cycle.data
   }));
 
   return (
@@ -131,7 +157,7 @@ export const StatementsView = ({ role }) => {
           <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--line)', padding: '0 16px', marginBottom: 24 }}>
             {personalRows.length > 0 ? (
               personalRows.map(item => (
-                <StatementRow key={item.id} title={item.title} date={item.date} size={item.size} />
+                <StatementRow key={item.id} title={item.title} date={item.date} size={item.size} data={item.data} />
               ))
             ) : (
               <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-faint)' }}>
@@ -159,7 +185,7 @@ export const StatementsView = ({ role }) => {
           <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--line)', padding: '0 16px' }}>
             {groupRows.length > 0 ? (
               groupRows.map(item => (
-                <StatementRow key={item.id} title={item.title} date={item.date} size={item.size} />
+                <StatementRow key={item.id} title={item.title} date={item.date} size={item.size} data={item.data} />
               ))
             ) : (
               <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-faint)' }}>
