@@ -1,19 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User as UserIcon, Shield, Users, Landmark, Eye, EyeOff, CheckCircle } from 'lucide-react';
-
-// ── Conditionally load Clerk hooks ────────────────────────────────────────────
-// We do this so the file doesn't crash at import-time if Clerk is not configured.
-let clerkHooks = null;
-const getClerkHooks = () => {
-  if (clerkHooks) return clerkHooks;
-  try {
-    // eslint-disable-next-line no-undef
-    clerkHooks = { available: true };
-  } catch (_) {
-    clerkHooks = { available: false };
-  }
-  return clerkHooks;
-};
+import { Mail, Lock, User as UserIcon, Eye, EyeOff, CheckCircle } from 'lucide-react';
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
 const formStyle = { width: '100%', maxWidth: 380, marginTop: 24, display: 'flex', flexDirection: 'column', gap: 14 };
@@ -47,28 +33,21 @@ const FooterLink = ({ text, linkText, onClick }) => (
   </div>
 );
 
-// ── Role Picker ───────────────────────────────────────────────────────────────
-const RolePicker = ({ setRole, title, subtitle, showWarning }) => (
+// ── Background wrapper ────────────────────────────────────────────────────────
+const AuthContainer = ({ children }) => (
   <div style={{
     minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: 'radial-gradient(circle at top right, rgba(23,181,112,0.1) 0%, transparent 40%), radial-gradient(circle at bottom left, rgba(242,193,78,0.05) 0%, transparent 40%), var(--bg)',
-    padding: 20, position: 'relative', overflow: 'hidden'
+    padding: 20, position: 'relative', overflow: 'hidden',
   }}>
-    {/* Abstract background shapes */}
     <div style={{ position: 'absolute', top: '10%', left: '15%', width: 300, height: 300, background: 'var(--green)', filter: 'blur(120px)', opacity: 0.1, borderRadius: '50%', pointerEvents: 'none' }} />
     <div style={{ position: 'absolute', bottom: '10%', right: '15%', width: 250, height: 250, background: 'var(--gold)', filter: 'blur(100px)', opacity: 0.05, borderRadius: '50%', pointerEvents: 'none' }} />
-    
+
     <div style={{
-      background: 'rgba(51, 53, 66, 0.4)',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
-      border: '1px solid rgba(255, 255, 255, 0.08)',
-      borderRadius: 24,
-      padding: '40px 30px',
-      width: '100%', maxWidth: 420,
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      boxShadow: '0 24px 40px rgba(0,0,0,0.2)',
-      position: 'relative', zIndex: 10
+      background: 'rgba(51, 53, 66, 0.4)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255,255,255,0.08)', borderRadius: 24, padding: '40px 30px',
+      width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', alignItems: 'center',
+      boxShadow: '0 24px 40px rgba(0,0,0,0.2)', position: 'relative', zIndex: 10,
     }}>
       <div style={{
         width: 70, height: 70, borderRadius: 18,
@@ -76,78 +55,17 @@ const RolePicker = ({ setRole, title, subtitle, showWarning }) => (
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontFamily: 'Sora', fontWeight: 800, color: '#08251d', fontSize: 32,
         marginBottom: 24, boxShadow: '0 8px 24px rgba(23,181,112,0.3)',
-        border: '1px solid rgba(255,255,255,0.2)'
+        border: '1px solid rgba(255,255,255,0.2)',
       }}>P</div>
-      
-      <h1 style={{ fontFamily: 'Sora', fontSize: 28, fontWeight: 700, margin: '0 0 8px', color: '#fff' }}>{title}</h1>
-      <p style={{ color: 'var(--text-dim)', fontSize: 15, margin: '0 0 28px', textAlign: 'center', lineHeight: 1.5 }}>{subtitle}</p>
-      
-      {showWarning && (
-        <div style={{
-          marginBottom: 24, padding: '12px 16px', background: 'rgba(242,193,78,0.1)',
-          border: '1px solid rgba(242,193,78,0.2)', borderRadius: 12,
-          display: 'flex', alignItems: 'center', gap: 10, width: '100%'
-        }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)', flexShrink: 0, boxShadow: '0 0 8px var(--gold)' }} />
-          <span style={{ fontSize: 13, color: '#e8cd84', fontWeight: 500, lineHeight: 1.4 }}>
-            Backend APIs not detected. Running in local demo mode.
-          </span>
-        </div>
-      )}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
-        {[
-          { role: 'Member', icon: <UserIcon size={20} />, label: 'Standard Member', desc: 'View pots, request loans' },
-          { role: 'Treasurer', icon: <Landmark size={20} />, label: 'Group Treasurer', desc: 'Approve contributions' },
-          { role: 'Chairperson', icon: <Users size={20} />, label: 'Group Chairperson', desc: 'Manage group rules' },
-          { role: 'Admin', icon: <Shield size={20} />, label: 'System Admin', desc: 'Platform oversight' }
-        ].map((item, idx) => (
-          <button
-            key={item.role}
-            onClick={() => setRole(item.role)}
-            style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              padding: '16px', borderRadius: 16,
-              display: 'flex', alignItems: 'center', gap: 16,
-              cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              textAlign: 'left', color: 'var(--text)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-              e.currentTarget.querySelector('.role-icon').style.color = 'var(--green)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-              e.currentTarget.querySelector('.role-icon').style.color = 'var(--text-faint)';
-            }}
-          >
-            <div className="role-icon" style={{ 
-              width: 42, height: 42, borderRadius: 12, 
-              background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--text-faint)', transition: 'color 0.2s'
-            }}>
-              {item.icon}
-            </div>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{item.label}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>{item.desc}</div>
-            </div>
-          </button>
-        ))}
-      </div>
+      {children}
     </div>
   </div>
 );
 
-// ── Clerk Auth Form — rendered only when Clerk IS configured ─────────────────
+// ── Clerk Auth Form ───────────────────────────────────────────────────────────
 import { useSignIn, useSignUp } from '@clerk/clerk-react';
 
-const ClerkAuthForm = ({ setRole }) => {
+const ClerkAuthForm = () => {
   const { isLoaded: siLoaded, signIn, setActive: siSetActive } = useSignIn();
   const { isLoaded: suLoaded, signUp, setActive: suSetActive } = useSignUp();
 
@@ -173,7 +91,7 @@ const ClerkAuthForm = ({ setRole }) => {
       const result = await signIn.create({ identifier: email, password });
       if (result.status === 'complete') {
         await siSetActive({ session: result.createdSessionId });
-        setRole('Member');
+        // Role is derived from Supabase on load — no manual role pick needed
       }
     } catch (err) {
       setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Sign in failed. Check your credentials.');
@@ -186,7 +104,10 @@ const ClerkAuthForm = ({ setRole }) => {
     if (password !== confirmPw) { setError('Passwords do not match.'); return; }
     setLoading(true); clearError();
     try {
-      await signUp.create({ emailAddress: email, password, firstName, lastName, unsafeMetadata: { phone } });
+      await signUp.create({
+        emailAddress: email, password, firstName, lastName,
+        unsafeMetadata: { phone },
+      });
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setMode('verify');
     } catch (err) {
@@ -202,7 +123,7 @@ const ClerkAuthForm = ({ setRole }) => {
       const result = await signUp.attemptEmailAddressVerification({ code: verifyCode });
       if (result.status === 'complete') {
         await suSetActive({ session: result.createdSessionId });
-        setRole('Member');
+        // App will now re-render as <SignedIn> and load data from Supabase
       }
     } catch (err) {
       setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid code.');
@@ -210,10 +131,9 @@ const ClerkAuthForm = ({ setRole }) => {
   };
 
   if (mode === 'verify') return (
-    <div className="auth-container">
-      <div className="brand-mark" style={{ width: 60, height: 60, fontSize: 28, marginBottom: 20 }}>P</div>
-      <h1 className="auth-title" style={{ fontFamily: 'Sora' }}>Check your inbox</h1>
-      <p className="auth-subtitle">We sent a 6-digit code to <strong>{email}</strong>.</p>
+    <AuthContainer>
+      <h1 style={{ fontFamily: 'Sora', fontSize: 26, fontWeight: 700, margin: '0 0 8px', color: '#fff' }}>Check your inbox</h1>
+      <p style={{ color: 'var(--text-dim)', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>We sent a 6-digit code to <strong>{email}</strong>.</p>
       <form onSubmit={handleVerify} style={formStyle}>
         {error && <ErrorBanner msg={error} />}
         <div style={fieldWrap}>
@@ -225,14 +145,13 @@ const ClerkAuthForm = ({ setRole }) => {
       </form>
       <FooterLink text="Didn't receive it? " linkText="Resend code"
         onClick={async () => { try { await signUp.prepareEmailAddressVerification({ strategy: 'email_code' }); } catch { setError('Failed to resend.'); } }} />
-    </div>
+    </AuthContainer>
   );
 
   if (mode === 'signup') return (
-    <div className="auth-container">
-      <div className="brand-mark" style={{ width: 60, height: 60, fontSize: 28, marginBottom: 20 }}>P</div>
-      <h1 className="auth-title" style={{ fontFamily: 'Sora' }}>Create an account</h1>
-      <p className="auth-subtitle">Join your group savings platform today.</p>
+    <AuthContainer>
+      <h1 style={{ fontFamily: 'Sora', fontSize: 26, fontWeight: 700, margin: '0 0 8px', color: '#fff' }}>Create an account</h1>
+      <p style={{ color: 'var(--text-dim)', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>Join your group savings platform today.</p>
       <form onSubmit={handleSignUp} style={formStyle}>
         {error && <ErrorBanner msg={error} />}
         <div style={{ display: 'flex', gap: 12 }}>
@@ -252,7 +171,7 @@ const ClerkAuthForm = ({ setRole }) => {
             placeholder="Email address" style={{ ...inputSt, paddingLeft: 42 }} required />
         </div>
         <div style={fieldWrap}>
-          <span style={{ ...iconStyle, fontSize: 14, fontWeight: 700, color: 'var(--text-faint)' }}>+</span>
+          <span style={{ ...iconStyle, fontSize: 14, fontWeight: 700 }}>+</span>
           <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
             placeholder="Phone (e.g. +256 700 123456)" style={{ ...inputSt, paddingLeft: 36 }} />
         </div>
@@ -273,15 +192,14 @@ const ClerkAuthForm = ({ setRole }) => {
         <SubmitBtn loading={loading} label="Create Account" />
       </form>
       <FooterLink text="Already have an account? " linkText="Sign in" onClick={() => { setMode('signin'); clearError(); }} />
-    </div>
+    </AuthContainer>
   );
 
   // Default: Sign In
   return (
-    <div className="auth-container">
-      <div className="brand-mark" style={{ width: 60, height: 60, fontSize: 28, marginBottom: 20 }}>P</div>
-      <h1 className="auth-title" style={{ fontFamily: 'Sora' }}>Welcome back</h1>
-      <p className="auth-subtitle">Sign in to access your PotTrust dashboard.</p>
+    <AuthContainer>
+      <h1 style={{ fontFamily: 'Sora', fontSize: 26, fontWeight: 700, margin: '0 0 8px', color: '#fff' }}>Welcome back</h1>
+      <p style={{ color: 'var(--text-dim)', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>Sign in to access your PotTrust dashboard.</p>
       <form onSubmit={handleSignIn} style={formStyle}>
         {error && <ErrorBanner msg={error} />}
         <div style={fieldWrap}>
@@ -301,17 +219,35 @@ const ClerkAuthForm = ({ setRole }) => {
         <SubmitBtn loading={loading} label="Sign In" />
       </form>
       <FooterLink text="Don't have an account? " linkText="Create one" onClick={() => { setMode('signup'); clearError(); }} />
-    </div>
+    </AuthContainer>
   );
 };
 
+// ── Fallback when Clerk is not configured ─────────────────────────────────────
+const NoClerkNotice = () => (
+  <div style={{
+    minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'var(--bg)', padding: 20,
+  }}>
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 24,
+      padding: '40px 30px', maxWidth: 420, width: '100%', textAlign: 'center',
+    }}>
+      <div style={{ fontFamily: 'Sora', fontWeight: 800, fontSize: 48, color: 'var(--green)', marginBottom: 24 }}>P</div>
+      <h1 style={{ fontFamily: 'Sora', fontSize: 22, fontWeight: 700, margin: '0 0 12px' }}>PotTrust</h1>
+      <p style={{ color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 20px' }}>
+        Authentication is not yet configured.<br />
+        Add <code style={{ background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 6, fontSize: 12 }}>VITE_CLERK_PUBLISHABLE_KEY</code> to your <code style={{ background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 6, fontSize: 12 }}>.env</code> file to enable login.
+      </p>
+      <div style={{ background: 'rgba(242,193,78,0.1)', border: '1px solid rgba(242,193,78,0.2)', borderRadius: 12, padding: '12px 16px', fontSize: 13, color: '#e8cd84' }}>
+        ⚠ Running without authentication — set up your environment variables.
+      </div>
+    </div>
+  </div>
+);
+
 // ── Main exported component ───────────────────────────────────────────────────
-export const AuthView = ({ setRole, clerkAvailable = false, rolePickerOnly = false }) => {
-  if (rolePickerOnly) {
-    return <RolePicker setRole={setRole} title="You're signed in!" subtitle="Choose a role to preview your dashboard." />;
-  }
-  if (!clerkAvailable) {
-    return <RolePicker setRole={setRole} title="Welcome to PotTrust" subtitle="Select a role to preview the dashboard experience." showWarning />;
-  }
-  return <ClerkAuthForm setRole={setRole} />;
+export const AuthView = ({ clerkAvailable = false }) => {
+  if (!clerkAvailable) return <NoClerkNotice />;
+  return <ClerkAuthForm />;
 };

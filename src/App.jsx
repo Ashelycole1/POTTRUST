@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth, useUser, SignedIn, SignedOut } from '@clerk/clerk-react';
+import { SignedIn, SignedOut } from '@clerk/clerk-react';
 import { DesktopSidebar, MobileBottomNav } from './components/Navigation';
 import { Topbar } from './components/Topbar';
 import { AuthView } from './views/AuthView';
@@ -20,43 +20,29 @@ import { NotificationsModal } from './components/NotificationsModal';
 import { AppProvider } from './context/AppContext';
 import { useSupabaseData } from './lib/useSupabaseData';
 
-// ── When Clerk IS loaded and user is signed in ────────────────────────────────
-function AppShellWithData({ role, setRole }) {
-  const supabaseData = useSupabaseData();
-
-  if (supabaseData.loading) {
-    return (
-      <div style={{
-        minHeight: '100vh', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: 16,
-        background: 'var(--bg)', color: 'var(--text-dim)',
-      }}>
-        <div style={{
-          width: 48, height: 48, border: '3px solid var(--line)',
-          borderTopColor: 'var(--green)', borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-        }} />
-        <p style={{ fontSize: 14, fontWeight: 500 }}>Loading your dashboard…</p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
-
+// ── Spinner shown while fetching Supabase data ────────────────────────────────
+function LoadingScreen() {
   return (
-    <AppProvider supabaseData={supabaseData}>
-      <AppShell role={role} setRole={setRole} />
-    </AppProvider>
+    <div style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 16,
+      background: 'var(--bg)', color: 'var(--text-dim)',
+    }}>
+      <div style={{
+        width: 48, height: 48, border: '3px solid var(--line)',
+        borderTopColor: 'var(--green)', borderRadius: '50%',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+      <p style={{ fontSize: 14, fontWeight: 500 }}>Loading your dashboard…</p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
   );
 }
 
-function AppShell({ role, setRole }) {
-
-  // Determine effective role: prefer Supabase group_member role if available,
-  // then fall back to the mock role chosen on the auth screen
-  const effectiveRole = role;
-
+// ── Full app shell — receives role derived from Supabase ──────────────────────
+function AppShell({ role }) {
   const renderDashboard = () => {
-    switch (effectiveRole) {
+    switch (role) {
       case 'Treasurer':   return <TreasurerView />;
       case 'Chairperson': return <ChairpersonView />;
       case 'Admin':       return <AdminOverview />;
@@ -69,81 +55,68 @@ function AppShell({ role, setRole }) {
     <Router>
       <div className="shell">
         <div className="app-grid">
-          <DesktopSidebar role={effectiveRole} />
+          <DesktopSidebar role={role} />
 
           <div className="main-col">
-            <Topbar role={effectiveRole} />
-
-            {/* Role switcher (dev convenience – remove before production) */}
-            <div style={{ padding: '0 20px', textAlign: 'right', marginBottom: 10 }}>
-              <select
-                value={effectiveRole}
-                onChange={e => setRole(e.target.value)}
-                style={{
-                  background: 'transparent', border: '1px solid var(--line)',
-                  color: 'var(--text-dim)', padding: '5px 10px', borderRadius: 8,
-                  fontSize: 12, cursor: 'pointer',
-                }}
-              >
-                <option value="Member">Member</option>
-                <option value="Treasurer">Treasurer</option>
-                <option value="Chairperson">Chairperson</option>
-                <option value="Admin">Admin</option>
-              </select>
-            </div>
+            <Topbar role={role} />
 
             <Routes>
               <Route path="/"           element={renderDashboard()} />
-              <Route path="/members"    element={<MembersView role={effectiveRole} />} />
+              <Route path="/members"    element={<MembersView role={role} />} />
               <Route path="/loans"      element={<LoansView />} />
               <Route path="/trust"      element={<TrustScoreView />} />
-              <Route path="/statements" element={<StatementsView role={effectiveRole} />} />
+              <Route path="/statements" element={<StatementsView role={role} />} />
               <Route path="/activity"   element={<ActivityView />} />
-              <Route path="/groups"     element={effectiveRole === 'Admin' ? <AdminGroupsView /> : <Navigate to="/" />} />
-              <Route path="/users"      element={effectiveRole === 'Admin' ? <UsersView /> : <Navigate to="/" />} />
-              <Route path="/settings"   element={<SettingsView role={effectiveRole} />} />
+              <Route path="/groups"     element={role === 'Admin' ? <AdminGroupsView /> : <Navigate to="/" />} />
+              <Route path="/users"      element={role === 'Admin' ? <UsersView /> : <Navigate to="/" />} />
+              <Route path="/settings"   element={<SettingsView role={role} />} />
               <Route path="*"           element={<Navigate to="/" />} />
             </Routes>
           </div>
         </div>
       </div>
 
-      <MobileBottomNav role={effectiveRole} />
+      <MobileBottomNav role={role} />
       <UploadProofModal />
       <NotificationsModal />
     </Router>
   );
 }
 
-// ── Root: handle Clerk loaded vs not configured ───────────────────────────────
+// ── Fetches Supabase data, derives role, then renders shell ───────────────────
+function AppShellWithData() {
+  const supabaseData = useSupabaseData();
+
+  if (supabaseData.loading) return <LoadingScreen />;
+
+  // Derive role from Supabase group_members.role (what they were assigned in the group)
+  // Fall back to 'Member' if the user hasn't been added to any group yet
+  const role = supabaseData.groupMember?.role || 'Member';
+
+  return (
+    <AppProvider supabaseData={supabaseData}>
+      <AppShell role={role} />
+    </AppProvider>
+  );
+}
+
+// ── Root component ────────────────────────────────────────────────────────────
 function App() {
-  const [role, setRole] = useState(null);
   const clerkConfigured = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-  // ── Clerk NOT configured — run in demo mode with role selector ────────────
   if (!clerkConfigured) {
-    if (!role) return <AuthView setRole={setRole} clerkAvailable={false} />;
-    return (
-      <AppProvider supabaseData={null}>
-        <AppShell role={role} setRole={setRole} />
-      </AppProvider>
-    );
+    // Supabase / Clerk not yet set up — show the sign-in/sign-up UI
+    return <AuthView clerkAvailable={false} />;
   }
 
-  // ── Clerk IS configured — use real auth ───────────────────────────────────
   return (
     <>
       <SignedOut>
-        <AuthView setRole={setRole} clerkAvailable={true} />
+        <AuthView clerkAvailable={true} />
       </SignedOut>
       <SignedIn>
-        {!role ? (
-          // First time after sign-in: let user pick a role (dev convenience)
-          // In production you'd derive this from Supabase group_members table
-          <AuthView setRole={setRole} clerkAvailable={true} rolePickerOnly={true} />
-        ) : (
-          <AppShellWithData role={role} setRole={setRole} />
-        )}
+        {/* No role picker — go straight to the dashboard using the Supabase-assigned role */}
+        <AppShellWithData />
       </SignedIn>
     </>
   );
