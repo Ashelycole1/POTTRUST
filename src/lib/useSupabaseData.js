@@ -72,7 +72,7 @@ export function useSupabaseData() {
     // 2. Contributions for this group
     const { data: contribs } = await supabase
       .from('contributions')
-      .select('*, users(first_name, last_name)')
+      .select('*, users!contributions_user_id_fkey(first_name, last_name)')
       .eq('group_id', gid)
       .order('submitted_at', { ascending: false });
     setContribs(contribs || []);
@@ -85,7 +85,7 @@ export function useSupabaseData() {
     // 4. Loans
     const { data: loanData } = await supabase
       .from('loans')
-      .select('*, users(first_name, last_name)')
+      .select('*, users!loans_user_id_fkey(first_name, last_name)')
       .eq('group_id', gid)
       .order('requested_at', { ascending: false });
     setLoans(loanData || []);

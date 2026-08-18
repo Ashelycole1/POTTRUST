@@ -38,10 +38,10 @@ const ProofCard = ({ proof }) => {
       </div>
 
       {/* Screenshot */}
-      {proof.screenshot && (
+      {(proof.screenshot || proof.proofUrl) && (
         <div style={{ padding: '0 16px 14px' }}>
           <img
-            src={URL.createObjectURL(proof.screenshot)}
+            src={proof.screenshot ? URL.createObjectURL(proof.screenshot) : proof.proofUrl}
             alt="Payment screenshot"
             style={{ width: '100%', borderRadius: 10, maxHeight: 180, objectFit: 'cover', border: '1px solid var(--line)' }}
           />

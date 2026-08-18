@@ -334,6 +334,21 @@ export const AppProvider = ({ children, supabaseData = null }) => {
       });
       if (error) console.error('[submitProof]', error);
       else {
+        // Notify the Treasurer that a new proof needs review
+        const { data: treasurer } = await supabase
+          .from('group_members')
+          .select('user_id')
+          .eq('group_id', supabaseData.groupData.id)
+          .eq('role', 'Treasurer')
+          .single();
+        if (treasurer?.user_id) {
+          await supabase.from('notifications').insert({
+            user_id:     treasurer.user_id,
+            title:       'New contribution proof to review',
+            description: `${displayName} submitted UGX ${Number(proofData.amount).toLocaleString()} · ${proofData.mode} ref #${proofData.txnRef}`,
+            is_read:     false,
+          });
+        }
         // Re-fetch so Treasurer's Review Queue gets the new submission immediately
         await refetch();
       }
@@ -534,6 +549,23 @@ export const AppProvider = ({ children, supabaseData = null }) => {
         status:      'PENDING',
       });
       if (error) console.error('[requestLoan]', error);
+      else {
+        // Notify the Chairperson that a new loan request needs their approval
+        const { data: chair } = await supabase
+          .from('group_members')
+          .select('user_id')
+          .eq('group_id', supabaseData.groupData.id)
+          .eq('role', 'Chairperson')
+          .single();
+        if (chair?.user_id) {
+          await supabase.from('notifications').insert({
+            user_id:     chair.user_id,
+            title:       'New loan request pending approval',
+            description: `${displayName} requested UGX ${Number(loanData.amount).toLocaleString()} · pending your approval`,
+            is_read:     false,
+          });
+        }
+      }
     }
 
     setLoanRequestModalOpen(false);
@@ -555,6 +587,21 @@ export const AppProvider = ({ children, supabaseData = null }) => {
         approved_by: supabaseData?.userData?.id || null,
         approved_at: new Date().toISOString(),
       }).eq('id', loanId);
+
+      // Notify the member whose loan was approved
+      const { data: loanRow } = await supabase
+        .from('loans')
+        .select('user_id')
+        .eq('id', loanId)
+        .single();
+      if (loanRow?.user_id) {
+        await supabase.from('notifications').insert({
+          user_id:     loanRow.user_id,
+          title:       'Loan approved ✓',
+          description: 'Your loan request has been approved by the Chairperson.',
+          is_read:     false,
+        });
+      }
     }
   }, [addLogEntry, supabaseData]);
 
@@ -573,6 +620,21 @@ export const AppProvider = ({ children, supabaseData = null }) => {
         status:           'REJECTED',
         rejection_reason: reason,
       }).eq('id', loanId);
+
+      // Notify the member whose loan was rejected
+      const { data: loanRow } = await supabase
+        .from('loans')
+        .select('user_id')
+        .eq('id', loanId)
+        .single();
+      if (loanRow?.user_id) {
+        await supabase.from('notifications').insert({
+          user_id:     loanRow.user_id,
+          title:       'Loan request rejected',
+          description: `Your loan request was not approved. Reason: ${reason || 'Not specified'}`,
+          is_read:     false,
+        });
+      }
     }
   }, [addLogEntry]);
 
