@@ -43,6 +43,18 @@ drop policy if exists "notifications: update own" on public.notifications;
 -- auth.uid() will be null. For the MVP, we will allow all authenticated
 -- anon clients (public) to read/write.
 
+-- Drop them first in case this script is run multiple times
+drop policy if exists "users: open access" on public.users;
+drop policy if exists "groups: open access" on public.groups;
+drop policy if exists "group_members: open access" on public.group_members;
+drop policy if exists "contributions: open access" on public.contributions;
+drop policy if exists "loans: open access" on public.loans;
+drop policy if exists "loan_repayments: open access" on public.loan_repayments;
+drop policy if exists "fines: open access" on public.fines;
+drop policy if exists "trust_scores: open access" on public.trust_scores;
+drop policy if exists "audit_logs: open access" on public.audit_logs;
+drop policy if exists "notifications: open access" on public.notifications;
+
 -- Users
 create policy "users: open access" on public.users for all to public using (true) with check (true);
 
