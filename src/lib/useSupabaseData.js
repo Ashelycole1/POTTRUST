@@ -26,6 +26,8 @@ export function useSupabaseData() {
   const [notifications, setNotifs]      = useState([]);
   const [trustScore, setTrustScore]     = useState(null);
 
+  const [myContrib, setMyContrib]       = useState(null);
+
   // ── Upsert current Clerk user into Supabase ─────────────────────────────
   const syncUser = useCallback(async () => {
     if (!user) return null;
@@ -59,15 +61,15 @@ export function useSupabaseData() {
       .eq('user_id', dbUser.id)
       .single();
 
-    if (gmErr && gmErr.code !== 'PGRST116') throw gmErr; // PGRST116 = no rows
+    if (gmErr && gmErr.code !== 'PGRST116') throw gmErr;
     setGroupMember(gm || null);
     setGroupData(gm?.groups || null);
 
-    if (!gm) return; // Not in a group yet
+    if (!gm) return;
 
     const gid = gm.group_id;
 
-    // 2. Contributions for this group (latest cycle)
+    // 2. Contributions for this group
     const { data: contribs } = await supabase
       .from('contributions')
       .select('*, users(first_name, last_name)')
@@ -77,7 +79,8 @@ export function useSupabaseData() {
     setPending((contribs || []).filter(c => c.status === 'PENDING'));
 
     // 3. My latest contribution
-    const myContrib = (contribs || []).find(c => c.user_id === dbUser.id);
+    const mine = (contribs || []).find(c => c.user_id === dbUser.id);
+    setMyContrib(mine || null);
 
     // 4. Loans
     const { data: loanData } = await supabase
@@ -155,6 +158,7 @@ export function useSupabaseData() {
     groupData,
     groupMember,
     contributions,
+    myContrib,
     pendingProofs,
     loans,
     myLoan,
@@ -162,7 +166,7 @@ export function useSupabaseData() {
     auditLogs,
     notifications,
     trustScore,
-    // refresh helpers
     refetch: () => userData && fetchDashboard(userData),
   };
 }
+

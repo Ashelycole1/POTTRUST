@@ -2,23 +2,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { supabase } from '../lib/supabase';
 
-// ── Seed / fallback data (used when Supabase is not configured) ───────────────
-const INITIAL_LOG = [
-  { id: 1, color_hint: 'green', headline: '<b>Egabo Aaron</b> was verified PAID',           detail: 'UGX 200,000 · MTN MoMo ref #82103',        created_at: 'Today, 9:14 AM' },
-  { id: 2, color_hint: 'gold',  headline: '<b>Onyango J. Steven</b> uploaded a payment slip', detail: 'Awaiting treasurer review',               created_at: 'Today, 8:02 AM' },
-  { id: 3, color_hint: 'coral', headline: '<b>Ssenyonjo K.</b> marked OVERDUE',              detail: 'Fine of UGX 5,000 applied automatically',  created_at: 'Yesterday, 6:30 PM' },
-  { id: 4, color_hint: 'green', headline: 'Loan repayment received from <b>you</b>',         detail: 'UGX 95,000 · pot updated',                 created_at: 'Yesterday, 2:11 PM' },
-  { id: 5, color_hint: 'green', headline: '<b>Tumwine N.</b> was verified PAID',             detail: 'UGX 200,000 · Airtel Money ref #55291',    created_at: 'Mon, 4:47 PM' },
-  { id: 6, color_hint: 'gold',  headline: 'New loan request from <b>Ssenyonjo K.</b>',       detail: 'UGX 450,000 requested · pending vote',     created_at: 'Mon, 11:20 AM' },
-];
-
-const INITIAL_SCHEDULE = [
-  { id: 5, label: 'Instalment 5', date: '12 Aug 2026', amount: 95000, done: false },
-  { id: 6, label: 'Instalment 6', date: '12 Sep 2026', amount: 95000, done: false },
-  { id: 7, label: 'Instalment 7', date: '12 Oct 2026', amount: 95000, done: false },
-  { id: 8, label: 'Instalment 8', date: '12 Nov 2026', amount: 95000, done: false },
-];
-
+// ── Helper: is Supabase actually configured? ─────────────────────────────────
 const isSupabaseConfigured = () =>
   !!import.meta.env.VITE_SUPABASE_URL &&
   import.meta.env.VITE_SUPABASE_URL !== 'https://placeholder.supabase.co';
@@ -28,23 +12,29 @@ const AppContext = createContext(null);
 export const AppProvider = ({ children, supabaseData = null }) => {
   const { user: clerkUser } = useUser();
 
-  // ── Derive display name from Clerk or fallback ────────────────────────────
+  // ── Derive display name from Clerk (never hardcoded) ─────────────────────
   const displayName = clerkUser
-    ? `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || clerkUser.primaryEmailAddress?.emailAddress
-    : 'Ashelycole';
+    ? `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() ||
+      clerkUser.primaryEmailAddress?.emailAddress ||
+      'User'
+    : 'User';
 
-  // ── Use Supabase data if available, else use mock data ───────────────────
+  // ── Derive my current contribution from Supabase data ────────────────────
+  const myContrib = supabaseData?.contributions?.find(
+    c => c.user_id === supabaseData?.userData?.id
+  ) || null;
+
   const [memberContrib, setMemberContrib] = useState({
-    paid:        supabaseData?.myContrib?.amount || 180000,
-    total:       supabaseData?.groupData?.contribution_amount || 200000,
-    status:      supabaseData?.myContrib?.status || 'PAID',
-    lastPayment: supabaseData?.myContrib
-      ? `Paid via ${supabaseData.myContrib.payment_mode}`
-      : 'Paid 12 Jul via MTN MoMo',
+    paid:        myContrib?.amount        || 0,
+    total:       supabaseData?.groupData?.contribution_amount || 0,
+    status:      myContrib?.status        || 'OVERDUE',
+    lastPayment: myContrib
+      ? `Paid via ${myContrib.payment_mode} · ref #${myContrib.txn_ref}`
+      : 'No payment recorded yet',
   });
 
   const [groupPot, setGroupPot] = useState(
-    supabaseData?.groupData?.total_pot || 4820000
+    supabaseData?.groupData?.total_pot || 0
   );
 
   const [pendingProofs, setPendingProofs] = useState(
@@ -52,95 +42,115 @@ export const AppProvider = ({ children, supabaseData = null }) => {
   );
 
   const [activityLog, setActivityLog] = useState(
-    supabaseData?.auditLogs?.length ? supabaseData.auditLogs : INITIAL_LOG
+    supabaseData?.auditLogs || []
   );
 
   // Modals
-  const [proofModalOpen,        setProofModalOpen]        = useState(false);
-  const [loanRequestModalOpen,  setLoanRequestModalOpen]  = useState(false);
-  const [loanRepayModalOpen,    setLoanRepayModalOpen]    = useState(false);
-  const [notificationsOpen,     setNotificationsOpen]     = useState(false);
+  const [proofModalOpen,       setProofModalOpen]       = useState(false);
+  const [loanRequestModalOpen, setLoanRequestModalOpen] = useState(false);
+  const [loanRepayModalOpen,   setLoanRepayModalOpen]   = useState(false);
+  const [notificationsOpen,    setNotificationsOpen]    = useState(false);
 
-  // Notifications
+  // Notifications — real data only
   const [notifications, setNotifications] = useState(
-    supabaseData?.notifications?.length
-      ? supabaseData.notifications
-      : [
-          { id: 1, title: 'Your payment was verified',    description: 'Treasurer verified your UGX 200,000 contribution.', created_at: '2 hours ago', is_read: false },
-          { id: 2, title: 'New loan request',             description: 'Ssenyonjo K. requested UGX 450,000.',              created_at: '1 day ago',   is_read: true  },
-          { id: 3, title: 'Upcoming due date',            description: 'Your next loan instalment of UGX 95,000 is due in 3 days.', created_at: '2 days ago', is_read: true  },
-        ]
+    supabaseData?.notifications || []
   );
 
-  // Loan state
+  // Loan state — real data only
   const [memberLoan, setMemberLoan] = useState(() => {
     const sl = supabaseData?.myLoan;
+    if (!sl) return { outstanding: 0, nextRepayment: 0, totalPaid: 0, totalTerm: 0 };
     return {
-      outstanding:   sl?.outstanding  || 620000,
-      nextRepayment: 95000,
-      totalPaid:     sl?.total_paid   || 380000,
-      totalTerm:     sl?.amount       || 1000000,
+      outstanding:   sl.outstanding,
+      nextRepayment: sl.outstanding > 0
+        ? Math.ceil(sl.outstanding / Math.max((sl.term_months || 1) - ((sl.total_paid / (sl.amount / (sl.term_months || 1))) || 0), 1))
+        : 0,
+      totalPaid:  sl.total_paid  || 0,
+      totalTerm:  sl.amount      || 0,
     };
   });
 
+  // Loans list — mapped from real Supabase data
   const [loansList, setLoansList] = useState(() => {
-    if (supabaseData?.loans?.length) {
-      return supabaseData.loans.map(l => ({
-        id:      l.id,
-        name:    `${l.users?.first_name} ${l.users?.last_name}`,
-        initials: `${l.users?.first_name?.[0] || ''}${l.users?.last_name?.[0] || ''}`,
-        sub:     `UGX ${l.outstanding.toLocaleString()} outstanding`,
-        status:  l.status,
-        color:   l.status === 'CLEARED' ? 'var(--green)' : l.status === 'AT RISK' ? 'var(--coral)' : 'var(--gold)',
-      }));
-    }
-    return [
-      { id: 1, name: 'You',           initials: 'NA', sub: 'UGX 620,000 outstanding · 4 of 8 instalments paid', status: 'ACTIVE',  color: 'var(--gold)'  },
-      { id: 2, name: 'Egabo Aaron',   initials: 'EA', sub: 'UGX 300,000 · cleared 2 Jul',                       status: 'CLEARED', color: 'var(--green)' },
-      { id: 3, name: 'Ssenyonjo K.',  initials: 'SK', sub: 'UGX 450,000 · repayment overdue',                   status: 'AT RISK', color: 'var(--coral)' },
-    ];
+    if (!supabaseData?.loans?.length) return [];
+    return supabaseData.loans.map(l => ({
+      id:       l.id,
+      name:     `${l.users?.first_name || ''} ${l.users?.last_name || ''}`.trim() || 'Unknown',
+      initials: `${l.users?.first_name?.[0] || ''}${l.users?.last_name?.[0] || ''}`.toUpperCase() || '?',
+      sub:      `UGX ${(l.outstanding || 0).toLocaleString()} outstanding`,
+      status:   l.status,
+      color:    l.status === 'CLEARED' ? 'var(--green)'
+              : l.status === 'AT RISK' ? 'var(--coral)'
+              : 'var(--gold)',
+    }));
   });
 
-  const [repaymentSchedule, setRepaymentSchedule] = useState(INITIAL_SCHEDULE);
-
-  const [trustScore, setTrustScore] = useState(
-    supabaseData?.trustScore
-      ? { score: supabaseData.trustScore.score, tier: supabaseData.trustScore.tier, streak: 14, loanRepayments: '4 / 4 on time', pendingProofs: 1, finesIssued: 0, lateContributions: 0, history: [], tips: [] }
-      : {
-          score: 812, tier: 'Very good', streak: 14,
-          loanRepayments: '4 / 4 on time', pendingProofs: 1, finesIssued: 0, lateContributions: 0,
-          history: [
-            { cycle: 'Aug 2026', score: 812, change: '+3' },
-            { cycle: 'Jul 2026', score: 809, change: '+11' },
-            { cycle: 'Jun 2026', score: 798, change: '+8'  },
-            { cycle: 'May 2026', score: 790, change: '-5'  },
-          ],
-          tips: [
-            { tip: 'Resolve your pending payment proof',                          impact: 'High impact',   color: 'var(--gold)'     },
-            { tip: 'Pay your next loan instalment before the due date',           impact: 'High impact',   color: 'var(--gold)'     },
-            { tip: 'Maintain your contribution streak for 3 more cycles',         impact: 'Medium impact', color: 'var(--text-dim)' },
-          ],
-        }
+  // Repayment schedule — real data from loan_repayments table
+  const [repaymentSchedule, setRepaymentSchedule] = useState(
+    supabaseData?.repaySchedule?.map((r, i) => ({
+      id:     r.id,
+      label:  `Instalment ${r.instalment_no || i + 1}`,
+      date:   r.paid_at ? new Date(r.paid_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Pending',
+      amount: r.amount,
+      done:   !!r.paid_at,
+    })) || []
   );
 
-  // Chairperson local state
-  const [pendingLoanRequests, setPendingLoanRequests] = useState([
-    { id: 1, name: 'Ssenyonjo K.', initials: 'SK', sub: 'UGX 450,000 requested · pending vote', status: 'PENDING', avatarColor: 'var(--gold)' },
-    { id: 2, name: 'Niwasiima A.', initials: 'NA', sub: 'UGX 200,000 requested · pending vote', status: 'PENDING', avatarColor: 'var(--gold)' },
-  ]);
-  const [pendingFines, setPendingFines] = useState([
-    { id: 1, name: 'Ssenyonjo K.',      initials: 'SK', sub: '3 days overdue',  status: 'OVERDUE', avatarColor: 'var(--coral)' },
-    { id: 2, name: 'Onyango J. Steven', initials: 'OJ', sub: '5 days overdue',  status: 'OVERDUE', avatarColor: 'var(--coral)' },
-  ]);
+  // Trust score — real data only
+  const [trustScore, setTrustScore] = useState(
+    supabaseData?.trustScore
+      ? {
+          score:             supabaseData.trustScore.score,
+          tier:              supabaseData.trustScore.tier,
+          streak:            0,
+          loanRepayments:    'See loan history',
+          pendingProofs:     (supabaseData?.pendingProofs || []).length,
+          finesIssued:       0,
+          lateContributions: 0,
+          history:           [],
+          tips:              [],
+          change:            supabaseData.trustScore.change || 0,
+        }
+      : null
+  );
+
+  // Chairperson — pending loans from real Supabase data
+  const [pendingLoanRequests, setPendingLoanRequests] = useState(() =>
+    (supabaseData?.loans || [])
+      .filter(l => l.status === 'PENDING')
+      .map(l => ({
+        id:          l.id,
+        name:        `${l.users?.first_name || ''} ${l.users?.last_name || ''}`.trim() || 'Unknown',
+        initials:    `${l.users?.first_name?.[0] || ''}${l.users?.last_name?.[0] || ''}`.toUpperCase() || '?',
+        sub:         `UGX ${(l.amount || 0).toLocaleString()} requested · pending vote`,
+        status:      'PENDING',
+        avatarColor: 'var(--gold)',
+      }))
+  );
+
+  // Overdue contributions — real data
+  const [pendingFines, setPendingFines] = useState(() =>
+    (supabaseData?.contributions || [])
+      .filter(c => c.status === 'OVERDUE')
+      .map(c => ({
+        id:          c.id,
+        name:        `${c.users?.first_name || ''} ${c.users?.last_name || ''}`.trim() || 'Unknown',
+        initials:    `${c.users?.first_name?.[0] || ''}${c.users?.last_name?.[0] || ''}`.toUpperCase() || '?',
+        sub:         `${c.cycle_label} · overdue`,
+        status:      'OVERDUE',
+        avatarColor: 'var(--coral)',
+      }))
+  );
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   const addLogEntry = useCallback(async (entry) => {
-    const local = { id: Date.now(), ...entry, created_at: 'Just now' };
+    const local = { id: Date.now(), ...entry, created_at: new Date().toISOString() };
     setActivityLog(prev => [local, ...prev]);
 
     if (isSupabaseConfigured() && supabaseData?.groupData?.id) {
       await supabase.from('audit_logs').insert({
         group_id:   supabaseData.groupData.id,
+        user_id:    supabaseData.userData?.id || null,
         action:     entry.action || 'GENERIC',
         headline:   entry.headline,
         detail:     entry.detail,
@@ -149,7 +159,7 @@ export const AppProvider = ({ children, supabaseData = null }) => {
     }
   }, [supabaseData]);
 
-  // ── Submit Contribution Proof ────────────────────────────────────────────
+  // ── Submit Contribution Proof ─────────────────────────────────────────────
   const submitProof = useCallback(async (proofData) => {
     const proof = {
       id:          Date.now(),
@@ -159,13 +169,18 @@ export const AppProvider = ({ children, supabaseData = null }) => {
       mode:        proofData.mode,
       txnRef:      proofData.txnRef,
       screenshot:  proofData.screenshot,
+      proofUrl:    proofData.proofUrl,
       notes:       proofData.notes,
-      submittedAt: 'Just now',
+      submittedAt: new Date().toISOString(),
       status:      'PENDING',
     };
 
     setPendingProofs(prev => [proof, ...prev]);
-    setMemberContrib(prev => ({ ...prev, status: 'PENDING', lastPayment: 'Slip uploaded · awaiting review' }));
+    setMemberContrib(prev => ({
+      ...prev,
+      status:      'PENDING',
+      lastPayment: 'Slip uploaded · awaiting review',
+    }));
 
     await addLogEntry({
       color_hint: 'gold',
@@ -174,25 +189,25 @@ export const AppProvider = ({ children, supabaseData = null }) => {
       action:     'PROOF_SUBMITTED',
     });
 
-    // Persist to Supabase if configured
     if (isSupabaseConfigured() && supabaseData?.userData?.id && supabaseData?.groupData?.id) {
-      await supabase.from('contributions').insert({
+      const { error } = await supabase.from('contributions').insert({
         group_id:     supabaseData.groupData.id,
         user_id:      supabaseData.userData.id,
-        cycle_label:  'Aug 2026',
+        cycle_label:  new Date().toLocaleString('en-GB', { month: 'short', year: 'numeric' }),
         amount:       Number(proofData.amount),
         payment_mode: proofData.mode,
         txn_ref:      proofData.txnRef,
         proof_url:    proofData.proofUrl || null,
-        notes:        proofData.notes,
+        notes:        proofData.notes || null,
         status:       'PENDING',
       });
+      if (error) console.error('[submitProof]', error);
     }
 
     setProofModalOpen(false);
   }, [addLogEntry, displayName, supabaseData]);
 
-  // ── Verify Proof (Treasurer) ─────────────────────────────────────────────
+  // ── Verify Proof (Treasurer) ──────────────────────────────────────────────
   const verifyProof = useCallback(async (proofId) => {
     const proof = pendingProofs.find(p => p.id === proofId);
     if (!proof) return;
@@ -216,7 +231,11 @@ export const AppProvider = ({ children, supabaseData = null }) => {
     if (isSupabaseConfigured()) {
       await supabase
         .from('contributions')
-        .update({ status: 'PAID', reviewed_at: new Date().toISOString() })
+        .update({
+          status:      'PAID',
+          reviewed_by: supabaseData?.userData?.id || null,
+          reviewed_at: new Date().toISOString(),
+        })
         .eq('txn_ref', proof.txnRef);
 
       await supabase
@@ -226,13 +245,13 @@ export const AppProvider = ({ children, supabaseData = null }) => {
     }
   }, [pendingProofs, addLogEntry, groupPot, supabaseData]);
 
-  // ── Reject Proof (Treasurer) ─────────────────────────────────────────────
+  // ── Reject Proof (Treasurer) ──────────────────────────────────────────────
   const rejectProof = useCallback(async (proofId, reason) => {
     const proof = pendingProofs.find(p => p.id === proofId);
     if (!proof) return;
 
     setPendingProofs(prev => prev.filter(p => p.id !== proofId));
-    setMemberContrib(prev => ({ ...prev, status: 'OVERDUE', lastPayment: `Rejected: ${reason}` }));
+    setMemberContrib(prev => ({ ...prev, status: 'REJECTED', lastPayment: `Rejected: ${reason}` }));
 
     await addLogEntry({
       color_hint: 'coral',
@@ -244,12 +263,17 @@ export const AppProvider = ({ children, supabaseData = null }) => {
     if (isSupabaseConfigured()) {
       await supabase
         .from('contributions')
-        .update({ status: 'REJECTED', rejection_reason: reason, reviewed_at: new Date().toISOString() })
+        .update({
+          status:           'REJECTED',
+          rejection_reason: reason,
+          reviewed_by:      supabaseData?.userData?.id || null,
+          reviewed_at:      new Date().toISOString(),
+        })
         .eq('txn_ref', proof.txnRef);
     }
-  }, [pendingProofs, addLogEntry]);
+  }, [pendingProofs, addLogEntry, supabaseData]);
 
-  // ── Repay Loan ───────────────────────────────────────────────────────────
+  // ── Repay Loan ────────────────────────────────────────────────────────────
   const repayLoan = useCallback(async (repayAmount, mode, txnRef) => {
     const amt = Number(repayAmount);
     setMemberLoan(prev => ({
@@ -279,11 +303,13 @@ export const AppProvider = ({ children, supabaseData = null }) => {
     });
 
     setLoansList(prev => prev.map(l => {
-      if (l.name === 'You') {
+      if (l.id === supabaseData?.myLoan?.id || l.name === displayName) {
         const cleared = memberLoan.outstanding - amt <= 0;
         return {
           ...l,
-          sub:    cleared ? `UGX ${memberLoan.totalTerm.toLocaleString()} · fully cleared` : `UGX ${(memberLoan.outstanding - amt).toLocaleString()} outstanding`,
+          sub:    cleared
+            ? `UGX ${memberLoan.totalTerm.toLocaleString()} · fully cleared`
+            : `UGX ${(memberLoan.outstanding - amt).toLocaleString()} outstanding`,
           status: cleared ? 'CLEARED' : 'ACTIVE',
           color:  cleared ? 'var(--green)' : 'var(--gold)',
         };
@@ -301,38 +327,44 @@ export const AppProvider = ({ children, supabaseData = null }) => {
       });
       await supabase
         .from('loans')
-        .update({ outstanding: Math.max(0, memberLoan.outstanding - amt), total_paid: memberLoan.totalPaid + amt })
+        .update({
+          outstanding: Math.max(0, memberLoan.outstanding - amt),
+          total_paid:  memberLoan.totalPaid + amt,
+          status:      memberLoan.outstanding - amt <= 0 ? 'CLEARED' : 'ACTIVE',
+        })
         .eq('id', supabaseData.myLoan.id);
     }
 
     setLoanRepayModalOpen(false);
-  }, [addLogEntry, memberLoan, supabaseData]);
+  }, [addLogEntry, memberLoan, supabaseData, displayName]);
 
-  // ── Request Loan ─────────────────────────────────────────────────────────
+  // ── Request Loan ──────────────────────────────────────────────────────────
   const requestLoan = useCallback(async (loanData) => {
     await addLogEntry({
       color_hint: 'gold',
-      headline:   'New loan request from <b>you</b>',
+      headline:   `New loan request from <b>${displayName}</b>`,
       detail:     `UGX ${Number(loanData.amount).toLocaleString()} requested · pending approval`,
       action:     'LOAN_REQUESTED',
     });
 
     if (isSupabaseConfigured() && supabaseData?.userData?.id && supabaseData?.groupData?.id) {
-      await supabase.from('loans').insert({
+      const { error } = await supabase.from('loans').insert({
         group_id:    supabaseData.groupData.id,
         user_id:     supabaseData.userData.id,
         amount:      Number(loanData.amount),
         outstanding: Number(loanData.amount),
-        purpose:     loanData.purpose,
+        total_paid:  0,
+        purpose:     loanData.purpose || null,
         term_months: Number(loanData.term) || 8,
         status:      'PENDING',
       });
+      if (error) console.error('[requestLoan]', error);
     }
 
     setLoanRequestModalOpen(false);
-  }, [addLogEntry, supabaseData]);
+  }, [addLogEntry, displayName, supabaseData]);
 
-  // ── Approve Loan (Chairperson) ───────────────────────────────────────────
+  // ── Approve Loan (Chairperson) ────────────────────────────────────────────
   const approveLoan = useCallback(async (loanId, memberName) => {
     setPendingLoanRequests(prev => prev.filter(l => l.id !== loanId));
     await addLogEntry({
@@ -343,11 +375,15 @@ export const AppProvider = ({ children, supabaseData = null }) => {
     });
 
     if (isSupabaseConfigured()) {
-      await supabase.from('loans').update({ status: 'ACTIVE' }).eq('id', loanId);
+      await supabase.from('loans').update({
+        status:      'ACTIVE',
+        approved_by: supabaseData?.userData?.id || null,
+        approved_at: new Date().toISOString(),
+      }).eq('id', loanId);
     }
-  }, [addLogEntry]);
+  }, [addLogEntry, supabaseData]);
 
-  // ── Reject Loan (Chairperson) ────────────────────────────────────────────
+  // ── Reject Loan (Chairperson) ─────────────────────────────────────────────
   const rejectLoan = useCallback(async (loanId, memberName, reason) => {
     setPendingLoanRequests(prev => prev.filter(l => l.id !== loanId));
     await addLogEntry({
@@ -358,11 +394,14 @@ export const AppProvider = ({ children, supabaseData = null }) => {
     });
 
     if (isSupabaseConfigured()) {
-      await supabase.from('loans').update({ status: 'REJECTED', rejection_reason: reason }).eq('id', loanId);
+      await supabase.from('loans').update({
+        status:           'REJECTED',
+        rejection_reason: reason,
+      }).eq('id', loanId);
     }
   }, [addLogEntry]);
 
-  // ── Issue Fine (Chairperson) ─────────────────────────────────────────────
+  // ── Issue Fine (Chairperson) ──────────────────────────────────────────────
   const issueFine = useCallback(async (memberId, memberName, amount) => {
     setPendingFines(prev => prev.filter(f => f.id !== memberId));
     await addLogEntry({
@@ -374,16 +413,17 @@ export const AppProvider = ({ children, supabaseData = null }) => {
 
     if (isSupabaseConfigured() && supabaseData?.groupData?.id) {
       await supabase.from('fines').insert({
-        group_id: supabaseData.groupData.id,
-        user_id:  memberId,
-        amount:   Number(amount || 5000),
-        reason:   'Overdue contribution',
-        status:   'OUTSTANDING',
+        group_id:  supabaseData.groupData.id,
+        user_id:   memberId,
+        issued_by: supabaseData?.userData?.id || null,
+        amount:    Number(amount || 5000),
+        reason:    'Overdue contribution',
+        status:    'OUTSTANDING',
       });
     }
   }, [addLogEntry, supabaseData]);
 
-  // ── Mark notification read ───────────────────────────────────────────────
+  // ── Mark notification read ────────────────────────────────────────────────
   const markNotifRead = useCallback(async (notifId) => {
     setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n));
     if (isSupabaseConfigured()) {
@@ -394,7 +434,10 @@ export const AppProvider = ({ children, supabaseData = null }) => {
   const markAllRead = useCallback(async () => {
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     if (isSupabaseConfigured() && supabaseData?.userData?.id) {
-      await supabase.from('notifications').update({ is_read: true }).eq('user_id', supabaseData.userData.id);
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', supabaseData.userData.id);
     }
   }, [supabaseData]);
 
