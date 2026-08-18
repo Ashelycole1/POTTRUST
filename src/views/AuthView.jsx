@@ -45,9 +45,9 @@ const AuthContainer = ({ children }) => (
 
     <div style={{
       background: 'rgba(51, 53, 66, 0.4)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-      border: '1px solid rgba(255,255,255,0.08)', borderRadius: 24, padding: '40px 30px',
+      border: '1px solid rgba(255,255,255,0.08)', borderRadius: 24, padding: '40px 20px',
       width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', alignItems: 'center',
-      boxShadow: '0 24px 40px rgba(0,0,0,0.2)', position: 'relative', zIndex: 10,
+      boxShadow: '0 24px 40px rgba(0,0,0,0.2)', position: 'relative', zIndex: 10, boxSizing: 'border-box'
     }}>
       <div style={{
         width: 70, height: 70, borderRadius: 18,
@@ -91,16 +91,48 @@ const ClerkAuthForm = () => {
       const result = await signIn.create({ identifier: email, password });
       if (result.status === 'complete') {
         await siSetActive({ session: result.createdSessionId });
+      } else if (result.status === 'needs_second_factor') {
+        // Send a code if it's phone/email based, or just set mode if TOTP
+        const factor = result.supportedFirstFactors?.find(f => f.strategy === 'phone_code') || 
+                       result.supportedSecondFactors?.find(f => f.strategy === 'phone_code');
+        if (factor) {
+          await signIn.prepareSecondFactor({ strategy: 'phone_code', phoneNumberId: factor.phoneNumberId });
+        }
+        setMode('mfa');
       } else {
         setError(`Sign in incomplete. Status: ${result.status}. Please check your account.`);
       }
     } catch (err) {
       setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Sign in failed. Check your credentials.');
     } finally { 
-      // Prevent React state warning on unmount
       if (document.body.contains(e.target)) {
         setLoading(false); 
       }
+    }
+  };
+
+  const handleMfa = async (e) => {
+    e.preventDefault();
+    if (!siLoaded) return;
+    setLoading(true); clearError();
+    try {
+      // attempt phone_code first, then totp if that fails or was chosen
+      let result;
+      try {
+        result = await signIn.attemptSecondFactor({ strategy: 'phone_code', code: verifyCode });
+      } catch (err) {
+        result = await signIn.attemptSecondFactor({ strategy: 'totp', code: verifyCode });
+      }
+      
+      if (result.status === 'complete') {
+        await siSetActive({ session: result.createdSessionId });
+      } else {
+        setError(`Failed to verify code. Status: ${result.status}`);
+      }
+    } catch (err) {
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid code.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -136,21 +168,30 @@ const ClerkAuthForm = () => {
     } finally { setLoading(false); }
   };
 
-  if (mode === 'verify') return (
+  if (mode === 'verify' || mode === 'mfa') return (
     <AuthContainer>
-      <h1 style={{ fontFamily: 'Sora', fontSize: 26, fontWeight: 700, margin: '0 0 8px', color: '#fff' }}>Check your inbox</h1>
-      <p style={{ color: 'var(--text-dim)', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>We sent a 6-digit code to <strong>{email}</strong>.</p>
-      <form onSubmit={handleVerify} style={formStyle}>
+      <h1 style={{ fontFamily: 'Sora', fontSize: 26, fontWeight: 700, margin: '0 0 8px', color: '#fff' }}>
+        {mode === 'mfa' ? 'Two-Step Verification' : 'Check your inbox'}
+      </h1>
+      <p style={{ color: 'var(--text-dim)', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>
+        {mode === 'mfa' ? 'Enter the verification code sent to your phone or authenticator app.' : `We sent a 6-digit code to ${email}.`}
+      </p>
+      <form onSubmit={mode === 'mfa' ? handleMfa : handleVerify} style={formStyle}>
         {error && <ErrorBanner msg={error} />}
         <div style={fieldWrap}>
           <CheckCircle size={18} style={iconStyle} />
           <input type="text" inputMode="numeric" value={verifyCode} onChange={e => setVerifyCode(e.target.value)}
-            placeholder="Enter 6-digit code" maxLength={6} style={{ ...inputSt, paddingLeft: 42 }} required autoFocus />
+            placeholder="Enter verification code" maxLength={6} style={{ ...inputSt, paddingLeft: 42 }} required autoFocus />
         </div>
         <SubmitBtn loading={loading} label="Verify & Continue" />
       </form>
-      <FooterLink text="Didn't receive it? " linkText="Resend code"
-        onClick={async () => { try { await signUp.prepareEmailAddressVerification({ strategy: 'email_code' }); } catch { setError('Failed to resend.'); } }} />
+      {mode === 'verify' && (
+        <FooterLink text="Didn't receive it? " linkText="Resend code"
+          onClick={async () => { try { await signUp.prepareEmailAddressVerification({ strategy: 'email_code' }); } catch { setError('Failed to resend.'); } }} />
+      )}
+      {mode === 'mfa' && (
+        <FooterLink text="Having trouble? " linkText="Back to sign in" onClick={() => { setMode('signin'); clearError(); }} />
+      )}
     </AuthContainer>
   );
 
