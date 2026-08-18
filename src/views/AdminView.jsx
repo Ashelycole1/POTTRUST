@@ -69,8 +69,12 @@ export const AdminOverview = () => {
 };
 
 const CreateGroupModal = ({ isOpen, onClose }) => {
+  const { userData } = useApp();
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
+  const [chairEmail, setChairEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   if (!isOpen) return null;
 
@@ -113,19 +117,62 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
             </div>
             
             <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Chairperson Email (Invite)</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Chairperson Email</label>
               <input
                 type="email"
+                value={chairEmail}
+                onChange={e => setChairEmail(e.target.value)}
                 placeholder="chairperson@example.com"
                 style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14, fontFamily: 'Inter', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
 
+            {error && <div style={{ color: 'var(--coral)', fontSize: 13, marginBottom: 16, background: 'rgba(255,100,100,0.1)', padding: 10, borderRadius: 8 }}>{error}</div>}
+
             <button 
-              onClick={() => { if(name) setStep(2); }} 
-              style={{ width: '100%', background: 'var(--green)', color: '#08251d', border: 'none', borderRadius: 12, padding: '14px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+              disabled={loading || !name}
+              onClick={async () => { 
+                if(!name) return;
+                setLoading(true); setError(null);
+                
+                let targetUserId = null;
+                // If email provided, find the user
+                if (chairEmail) {
+                  const { data: userRow } = await supabase.from('users').select('id').eq('email', chairEmail).single();
+                  if (!userRow) {
+                    setError(`No user found with email ${chairEmail}. They must create an account first.`);
+                    setLoading(false);
+                    return;
+                  }
+                  targetUserId = userRow.id;
+                }
+
+                // Insert Group
+                const { data: newGroup, error: groupErr } = await supabase.from('groups').insert({
+                  name,
+                  created_by: userData?.id
+                }).select().single();
+
+                if (groupErr) {
+                  setError('Failed to create group: ' + groupErr.message);
+                  setLoading(false); return;
+                }
+
+                // Assign Chairperson
+                if (targetUserId && newGroup) {
+                  await supabase.from('group_members').insert({
+                    group_id: newGroup.id,
+                    user_id: targetUserId,
+                    role: 'Chairperson'
+                  });
+                }
+
+                setLoading(false);
+                setStep(2); 
+              }} 
+              style={{ width: '100%', background: 'var(--green)', color: '#08251d', border: 'none', borderRadius: 12, padding: '14px', fontWeight: 700, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading || !name ? 0.7 : 1 }}
             >
-              Create Group
+              {loading ? 'Creating...' : 'Create Group'}
             </button>
           </>
         )}
@@ -155,11 +202,12 @@ export const AdminGroupsView = () => {
   const navigate = useNavigate();
   const { displayName } = useApp();
 
+  const fetchGroups = async () => {
+    const { data } = await supabase.from('groups').select('*').order('created_at', { ascending: false });
+    if (data) setGroups(data);
+  };
+
   useEffect(() => {
-    const fetchGroups = async () => {
-      const { data } = await supabase.from('groups').select('*').order('created_at', { ascending: false });
-      if (data) setGroups(data);
-    };
     fetchGroups();
   }, []);
 
@@ -202,9 +250,7 @@ export const AdminGroupsView = () => {
             <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', padding: '10px 0' }}>No groups found.</div>
           )}
         </div>
-      </div>
-
-      <CreateGroupModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
+      <CreateGroupModal isOpen={modalOpen} onClose={() => { setModalOpen(false); fetchGroups(); }} />
     </>
   );
 };
