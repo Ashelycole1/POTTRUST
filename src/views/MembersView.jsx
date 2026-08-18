@@ -77,7 +77,7 @@ export const MembersView = ({ role }) => {
         avatarUrl:  u?.avatar_url,
         joined:     u?.created_at ? new Date(u.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : '—',
         role:       gm.role,
-        status:     latestContrib?.status || 'OVERDUE',
+        status:     latestContrib?.status || 'PENDING',
         cycle:      latestContrib?.cycle_label || '—',
         amount:     latestContrib?.amount || 0,
         score:      ts?.score || null,

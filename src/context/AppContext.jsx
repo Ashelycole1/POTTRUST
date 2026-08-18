@@ -27,7 +27,7 @@ export const AppProvider = ({ children, supabaseData = null }) => {
   const [memberContrib, setMemberContrib] = useState({
     paid:        myContrib?.amount        || 0,
     total:       supabaseData?.groupData?.contribution_amount || 0,
-    status:      myContrib?.status        || 'OVERDUE',
+    status:      myContrib?.status        || 'PENDING',
     lastPayment: myContrib
       ? `Paid via ${myContrib.payment_mode} · ref #${myContrib.txn_ref}`
       : 'No payment recorded yet',
@@ -137,7 +137,7 @@ export const AppProvider = ({ children, supabaseData = null }) => {
         name:        `${c.users?.first_name || ''} ${c.users?.last_name || ''}`.trim() || 'Unknown',
         initials:    `${c.users?.first_name?.[0] || ''}${c.users?.last_name?.[0] || ''}`.toUpperCase() || '?',
         sub:         `${c.cycle_label} · overdue`,
-        status:      'OVERDUE',
+        status:      'PENDING',
         avatarColor: 'var(--coral)',
       }))
   );
