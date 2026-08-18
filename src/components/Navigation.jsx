@@ -7,6 +7,7 @@ import { useClerk } from '@clerk/clerk-react';
 export const DesktopSidebar = ({ role }) => {
   const location = useLocation();
   const { signOut } = useClerk();
+  const { groupName } = useApp();
   
   const getNavItems = () => {
     const base = [
@@ -34,7 +35,7 @@ export const DesktopSidebar = ({ role }) => {
         <div className="brand-mark">P</div>
         <div>
           <div className="brand-name">PotTrust</div>
-          <div className="brand-sub">{role === 'Admin' ? 'Admin Portal' : 'Katonga Traders SACCO'}</div>
+          <div className="brand-sub">{role === 'Admin' ? 'Admin Portal' : (groupName || 'None')}</div>
         </div>
       </div>
       {getNavItems().map(item => (

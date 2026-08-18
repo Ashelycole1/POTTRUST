@@ -73,8 +73,16 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [chairEmail, setChairEmail] = useState('');
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      supabase.from('users').select('email, first_name, last_name')
+        .then(({ data }) => setUsers(data || []));
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -118,13 +126,18 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
             
             <div style={{ marginBottom: 24 }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Chairperson Email</label>
-              <input
-                type="email"
+              <select
                 value={chairEmail}
                 onChange={e => setChairEmail(e.target.value)}
-                placeholder="chairperson@example.com"
                 style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14, fontFamily: 'Inter', outline: 'none', boxSizing: 'border-box' }}
-              />
+              >
+                <option value="">-- Optional: Select Chairperson --</option>
+                {users.map(u => (
+                  <option key={u.email} value={u.email}>
+                    {u.first_name} {u.last_name} ({u.email})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {error && <div style={{ color: 'var(--coral)', fontSize: 13, marginBottom: 16, background: 'rgba(255,100,100,0.1)', padding: 10, borderRadius: 8 }}>{error}</div>}

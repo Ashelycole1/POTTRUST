@@ -3,7 +3,7 @@ import { Bell, Upload } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const Topbar = ({ role }) => {
-  const { setNotificationsOpen, notifications } = useApp();
+  const { setNotificationsOpen, notifications, groupName } = useApp();
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -12,7 +12,7 @@ export const Topbar = ({ role }) => {
         <div className="brand-mark">P</div>
         <div>
           <div className="brand-name">PotTrust</div>
-          <div className="brand-sub">{role === 'Admin' ? 'Admin Portal' : 'Katonga Traders SACCO'}</div>
+          <div className="brand-sub">{role === 'Admin' ? 'Admin Portal' : (groupName || 'None')}</div>
         </div>
       </div>
       <div className="top-actions">

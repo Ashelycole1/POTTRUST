@@ -45,7 +45,8 @@ export const UsersView = () => {
       return {
         id: gm?.id || `fake-${u.id}`,
         user_id: u.id,
-        role: u.global_role || gm?.role || 'Member',
+        // Only use global_role if it's elevated (Admin); otherwise trust group role
+        role: (u.global_role && u.global_role === 'Admin') ? 'Admin' : (gm?.role || u.global_role || 'Member'),
         groups: gm?.groups || null,
         group_id: gm?.group_id,
         users: { ...u, group_members: undefined }
