@@ -250,6 +250,7 @@ export const AdminGroupsView = () => {
             <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', padding: '10px 0' }}>No groups found.</div>
           )}
         </div>
+      </div>
       <CreateGroupModal isOpen={modalOpen} onClose={() => { setModalOpen(false); fetchGroups(); }} />
     </>
   );
