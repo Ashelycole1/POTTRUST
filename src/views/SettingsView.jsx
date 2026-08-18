@@ -134,25 +134,17 @@ const UserProfile = () => {
     setUploadingAvatar(true);
     setError('');
     try {
-      // Preview immediately
       setAvatarPreview(URL.createObjectURL(f));
-
-      // Upload to Supabase storage (bucket: pottrust_uploads)
       const ext  = f.name.split('.').pop();
       const path = `avatars/${user.id}.${ext}`;
       const { error: upErr } = await supabase.storage
-        .from('pottrust_uploads')
-        .upload(path, f, { upsert: true, contentType: f.type });
-
+        .from('avatars')
+        .upload(path, f, { upsert: true, cacheControl: '3600' });
       if (upErr) throw upErr;
-
-      const { data: urlData } = supabase.storage.from('pottrust_uploads').getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
       const publicUrl = urlData?.publicUrl;
-
       if (publicUrl) {
-        // Persist URL in our users table
         await supabase.from('users').update({ avatar_url: publicUrl }).eq('clerk_id', user.id);
-        // Update Clerk profile image
         await user.setProfileImage({ file: f });
         setAvatarPreview(publicUrl);
       }
@@ -330,10 +322,10 @@ const ProfileSettings = ({ groupId }) => {
 
   const uploadGroupImage = async (file, path) => {
     const { error } = await supabase.storage
-      .from('pottrust_uploads')
-      .upload(path, file, { upsert: true, contentType: file.type });
+      .from('group-assets')
+      .upload(path, file, { upsert: true, cacheControl: '3600' });
     if (error) throw error;
-    return supabase.storage.from('pottrust_uploads').getPublicUrl(path).data?.publicUrl;
+    return supabase.storage.from('group-assets').getPublicUrl(path).data?.publicUrl;
   };
 
   const handleLogo = async (e) => {
@@ -571,17 +563,23 @@ const FinesSettings = () => {
 
 // ── Members Settings (uses real Supabase data) ────────────────────────────────
 const MembersSettings = ({ groupId }) => {
-  const [email, setEmail]   = useState('');
-  const [members, setMembers] = useState([]);
-  const [roles, setRoles]   = useState({});
-  const [saving, setSaving] = useState({});
+  const [search, setSearch]     = useState('');
+  const [allUsers, setAllUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [addRole, setAddRole]   = useState('Member');
+  const [adding, setAdding]     = useState(false);
+  const [addError, setAddError] = useState('');
+  const [addSuccess, setAddSuccess] = useState('');
+  const [members, setMembers]   = useState([]);
+  const [roles, setRoles]       = useState({});
+  const [saving, setSaving]     = useState({});
   const [removing, setRemoving] = useState({});
 
-  useEffect(() => {
+  const loadMembers = () => {
     if (!groupId) return;
     supabase
       .from('group_members')
-      .select('*, users(first_name, last_name, email, avatar_url)')
+      .select('*, users(id, first_name, last_name, email, avatar_url)')
       .eq('group_id', groupId)
       .then(({ data }) => {
         if (!data) return;
@@ -590,7 +588,45 @@ const MembersSettings = ({ groupId }) => {
         data.forEach(m => { r[m.id] = m.role; });
         setRoles(r);
       });
-  }, [groupId]);
+  };
+
+  useEffect(() => { loadMembers(); }, [groupId]);
+
+  // Fetch all users not already in this group
+  useEffect(() => {
+    if (!groupId) return;
+    supabase.from('users').select('id, first_name, last_name, email').then(({ data }) => {
+      setAllUsers(data || []);
+    });
+  }, [groupId, members]);
+
+  const memberUserIds = new Set(members.map(m => m.user_id ?? m.users?.id));
+  const availableUsers = (allUsers || []).filter(u => {
+    if (memberUserIds.has(u.id)) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(q);
+  });
+
+  const handleAdd = async () => {
+    if (!selectedUserId || !groupId) return;
+    setAdding(true); setAddError(''); setAddSuccess('');
+    const { error } = await supabase.from('group_members').insert({
+      group_id: groupId,
+      user_id: selectedUserId,
+      role: addRole,
+    });
+    if (error) {
+      setAddError('Failed to add member: ' + error.message);
+    } else {
+      const added = allUsers.find(u => u.id === selectedUserId);
+      setAddSuccess(`${added?.first_name || 'User'} has been added to the group as ${addRole}.`);
+      setSelectedUserId('');
+      loadMembers();
+      setTimeout(() => setAddSuccess(''), 3000);
+    }
+    setAdding(false);
+  };
 
   const handleRoleChange = async (memberId, newRole) => {
     setRoles(prev => ({ ...prev, [memberId]: newRole }));
@@ -611,17 +647,54 @@ const MembersSettings = ({ groupId }) => {
       <SectionHeader title="Manage Members" subtitle="Invite new members or change roles within the group." />
 
       <Card>
-        <SectionHeader title="Invite a Member" />
-        <Field label="Email or Phone Number">
-          <input style={inputStyle} value={email} onChange={e => setEmail(e.target.value)} placeholder="e.g. +256 700 000000" />
-        </Field>
-        <button style={{
-          background: 'var(--green)', color: '#08251d', border: 'none', borderRadius: 12,
-          padding: '12px 20px', fontWeight: 700, fontSize: 14, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          <UserPlus size={16} /> Send Invite
+        <SectionHeader title="Add a Member" subtitle="Add an existing registered user to this group." />
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <input
+          style={inputStyle}
+          placeholder="Search by name or email..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <select
+          value={selectedUserId}
+          onChange={e => setSelectedUserId(e.target.value)}
+          style={{ ...inputStyle, cursor: 'pointer' }}
+        >
+          <option value="">-- Select a user to add --</option>
+          {availableUsers.map(u => (
+            <option key={u.id} value={u.id}>
+              {u.first_name} {u.last_name} · {u.email}
+            </option>
+          ))}
+          {availableUsers.length === 0 && <option disabled>No users available (all are already members)</option>}
+        </select>
+        <select
+          value={addRole}
+          onChange={e => setAddRole(e.target.value)}
+          style={{ ...inputStyle, cursor: 'pointer' }}
+        >
+          <option value="Member">Member</option>
+          <option value="Treasurer">Treasurer</option>
+          <option value="Chairperson">Chairperson</option>
+        </select>
+        {addError && <div style={{ color: 'var(--coral)', fontSize: 13, background: 'rgba(255,100,100,0.1)', padding: '8px 12px', borderRadius: 8 }}>{addError}</div>}
+        {addSuccess && <div style={{ color: 'var(--green)', fontSize: 13, background: 'rgba(0,200,100,0.1)', padding: '8px 12px', borderRadius: 8 }}>✓ {addSuccess}</div>}
+        <button
+          disabled={!selectedUserId || adding}
+          onClick={handleAdd}
+          style={{
+            background: selectedUserId && !adding ? 'var(--green)' : 'var(--surface-2)',
+            color: selectedUserId && !adding ? '#08251d' : 'var(--text-dim)',
+            border: 'none', borderRadius: 12,
+            padding: '12px 20px', fontWeight: 700, fontSize: 14,
+            cursor: selectedUserId && !adding ? 'pointer' : 'not-allowed',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}
+        >
+          <UserPlus size={16} /> {adding ? 'Adding...' : 'Add to Group'}
         </button>
+      </div>
       </Card>
 
       <Card>
