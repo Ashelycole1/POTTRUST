@@ -1,51 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Download, Calendar, Lock, Check } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
-const StatementRow = ({ title, date, size, type = 'PDF' }) => {
-  const [status, setStatus] = useState('idle'); // idle, downloading, done
+// ── Statement row component ───────────────────────────────────────────────────
+const StatementRow = ({ title, date, size, type = 'PDF', onDownload }) => {
+  const [status, setStatus] = useState('idle'); // idle | downloading | done
 
   const handleDownload = () => {
     if (status !== 'idle') return;
     setStatus('downloading');
+    // Simulate PDF generation (real implementation would call a backend/edge function)
     setTimeout(() => {
       setStatus('done');
-      setTimeout(() => {
-        setStatus('idle');
-      }, 2000);
-    }, 1500);
+      if (onDownload) onDownload();
+      setTimeout(() => setStatus('idle'), 2000);
+    }, 1200);
   };
 
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12, padding: '16px 0',
-      borderBottom: '1px solid var(--line)'
+      borderBottom: '1px solid var(--line)',
     }}>
       <div style={{
         width: 44, height: 44, borderRadius: 12, background: 'var(--surface-2)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green)', flexShrink: 0
+        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green)', flexShrink: 0,
       }}>
         <FileText size={20} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 4 }}>{title}</div>
         <div style={{ fontSize: 11.5, color: 'var(--text-faint)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Calendar size={12} /> {date} <span style={{ opacity: 0.5 }}>·</span> {type} ({size})
+          <Calendar size={12} /> {date}
+          {size && <><span style={{ opacity: 0.5 }}>·</span> {type} ({size})</>}
         </div>
       </div>
-      <button 
+      <button
         onClick={handleDownload}
         style={{
-          background: status === 'done' ? 'var(--green-deep)' : 'none', 
-          border: '1px solid var(--line)', 
+          background: status === 'done' ? 'var(--green-deep)' : 'none',
+          border: '1px solid var(--line)',
           borderRadius: 10,
-          padding: '8px', 
-          color: status === 'done' ? 'var(--green)' : 'var(--text-dim)', 
-          cursor: status === 'downloading' ? 'not-allowed' : 'pointer', 
-          display: 'flex',
-          alignItems: 'center', 
-          justifyContent: 'center',
-          minWidth: 34,
-          transition: 'all 0.2s ease'
+          padding: '8px',
+          color: status === 'done' ? 'var(--green)' : 'var(--text-dim)',
+          cursor: status === 'downloading' ? 'not-allowed' : 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          minWidth: 34, transition: 'all 0.2s ease',
         }}
         disabled={status === 'downloading'}
       >
@@ -54,53 +54,56 @@ const StatementRow = ({ title, date, size, type = 'PDF' }) => {
           <span style={{
             width: 14, height: 14, border: '2px solid var(--text-dim)',
             borderTopColor: 'transparent', borderRadius: '50%',
-            animation: 'spin 0.6s linear infinite', display: 'inline-block'
+            animation: 'spin 0.6s linear infinite', display: 'inline-block',
           }} />
         )}
         {status === 'done' && <Check size={16} />}
       </button>
-
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const fmtDate = (iso) =>
+  iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+
+const fmtGenerated = (iso) =>
+  iso ? `Generated ${new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : '';
+
 export const StatementsView = ({ role }) => {
+  const { groupContributions, loansList, userData, groupData } = useApp();
   const [activeTab, setActiveTab] = useState('personal');
-  const [personalList, setPersonalList] = useState([
-    { id: 1, title: "July 2026 Contribution Statement", date: "Generated Aug 1, 2026", size: "1.2 MB" },
-    { id: 2, title: "June 2026 Contribution Statement", date: "Generated Jul 1, 2026", size: "1.1 MB" },
-    { id: 3, title: "Q2 2026 Loan Clearance Letter", date: "Generated Jun 30, 2026", size: "840 KB" },
-    { id: 4, title: "May 2026 Contribution Statement", date: "Generated Jun 1, 2026", size: "1.1 MB" }
-  ]);
+  const canViewGroup = role === 'Treasurer' || role === 'Chairperson' || role === 'Admin';
 
-  const [groupList, setGroupList] = useState([
-    { id: 1, title: "Katonga SACCO - July 2026 Reconciliation", date: "Generated Aug 2, 2026", size: "4.5 MB" },
-    { id: 2, title: "Katonga SACCO - June 2026 Reconciliation", date: "Generated Jul 2, 2026", size: "4.2 MB" },
-    { id: 3, title: "Q2 2026 Full Audit Report", date: "Generated Jul 5, 2026", size: "8.1 MB" }
-  ]);
+  // Build personal statement rows from the user's own contributions
+  const myContributions = (groupContributions || []).filter(c => c.user_id === userData?.id);
+  const myLoans = loansList.filter(l => l.name === userData?.id || true); // all loans visible
 
-  const canViewGroup = role === 'Treasurer' || role === 'Chairperson';
+  // Personal statements: one per cycle (contribution statements)
+  const personalRows = myContributions.map(c => ({
+    id: c.id,
+    title: `${c.cycle_label || 'Contribution'} Statement`,
+    date: fmtGenerated(c.submitted_at || c.created_at),
+    size: null,
+  }));
 
-  const loadOlderPersonal = () => {
-    const older = [
-      { id: 5, title: "April 2026 Contribution Statement", date: "Generated May 1, 2026", size: "1.0 MB" },
-      { id: 6, title: "March 2026 Contribution Statement", date: "Generated Apr 1, 2026", size: "1.2 MB" }
-    ];
-    setPersonalList(prev => [...prev, ...older.filter(o => !prev.some(p => p.id === o.id))]);
-  };
-
-  const loadOlderGroup = () => {
-    const older = [
-      { id: 4, title: "Katonga SACCO - May 2026 Reconciliation", date: "Generated Jun 2, 2026", size: "4.0 MB" },
-      { id: 5, title: "Q1 2026 Full Audit Report", date: "Generated Apr 5, 2026", size: "7.8 MB" }
-    ];
-    setGroupList(prev => [...prev, ...older.filter(o => !prev.some(p => p.id === o.id))]);
-  };
+  // Group statements: one per cycle (all contributions)
+  const cycleMap = {};
+  (groupContributions || []).forEach(c => {
+    const label = c.cycle_label || 'Unknown Cycle';
+    if (!cycleMap[label]) cycleMap[label] = { label, count: 0, latest: c.submitted_at };
+    cycleMap[label].count += 1;
+    if (new Date(c.submitted_at) > new Date(cycleMap[label].latest)) {
+      cycleMap[label].latest = c.submitted_at;
+    }
+  });
+  const groupRows = Object.values(cycleMap).map((cycle, i) => ({
+    id: i,
+    title: `${groupData?.name || 'Group'} — ${cycle.label} Reconciliation`,
+    date: fmtGenerated(cycle.latest),
+    size: null,
+  }));
 
   return (
     <>
@@ -124,19 +127,19 @@ export const StatementsView = ({ role }) => {
           <p style={{ fontSize: 12.5, color: 'var(--text-faint)', margin: '0 0 16px' }}>
             Official records of your personal contributions, fines, and loan repayments.
           </p>
-          
+
           <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--line)', padding: '0 16px', marginBottom: 24 }}>
-            {personalList.map(item => (
-              <StatementRow key={item.id} title={item.title} date={item.date} size={item.size} />
-            ))}
-            <div style={{ borderBottom: 'none', padding: '16px 0', textAlign: 'center' }}>
-              <button 
-                onClick={loadOlderPersonal}
-                style={{ background: 'none', border: 'none', color: 'var(--green)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-              >
-                Load older statements
-              </button>
-            </div>
+            {personalRows.length > 0 ? (
+              personalRows.map(item => (
+                <StatementRow key={item.id} title={item.title} date={item.date} size={item.size} />
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-faint)' }}>
+                <FileText size={36} style={{ opacity: 0.3, marginBottom: 12 }} />
+                <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>No statements yet</p>
+                <p style={{ fontSize: 12.5, margin: '6px 0 0' }}>Statements appear here once you make your first contribution.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -152,23 +155,22 @@ export const StatementsView = ({ role }) => {
           <p style={{ fontSize: 12.5, color: 'var(--text-faint)', margin: '0 0 16px' }}>
             Comprehensive reconciliations and overarching group pot audits. Visible only to the Chairperson and Treasurer.
           </p>
-          
+
           <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--line)', padding: '0 16px' }}>
-            {groupList.map(item => (
-              <StatementRow key={item.id} title={item.title} date={item.date} size={item.size} />
-            ))}
-            <div style={{ borderBottom: 'none', padding: '16px 0', textAlign: 'center' }}>
-              <button 
-                onClick={loadOlderGroup}
-                style={{ background: 'none', border: 'none', color: 'var(--green)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-              >
-                Load older statements
-              </button>
-            </div>
+            {groupRows.length > 0 ? (
+              groupRows.map(item => (
+                <StatementRow key={item.id} title={item.title} date={item.date} size={item.size} />
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-faint)' }}>
+                <FileText size={36} style={{ opacity: 0.3, marginBottom: 12 }} />
+                <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>No group statements yet</p>
+                <p style={{ fontSize: 12.5, margin: '6px 0 0' }}>Group reconciliations will appear here once contributions are recorded.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
     </>
   );
 };
-
