@@ -27,6 +27,19 @@ export const ScoreCard = () => {
   const navigate = useNavigate();
   const { trustScore } = useApp();
   
+  if (!trustScore) {
+    return (
+      <div className="card card-score">
+        <div className="weave"></div>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center', alignItems: 'center', color: 'var(--text-dim)', textAlign: 'center', padding: '0 20px' }}>
+          <TrendingUp size={28} style={{ opacity: 0.3, marginBottom: 12 }} />
+          <div style={{ fontSize: 13, fontWeight: 600 }}>No score yet</div>
+          <div style={{ fontSize: 11, marginTop: 4 }}>Your score appears after your first contribution</div>
+        </div>
+      </div>
+    );
+  }
+
   // Calculate stroke dash based on score out of 1000
   const maxScore = 1000;
   const percentage = trustScore.score / maxScore;

@@ -94,7 +94,7 @@ function AppShell({ role, setRole }) {
 
             <Routes>
               <Route path="/"           element={renderDashboard()} />
-              <Route path="/members"    element={<MembersView />} />
+              <Route path="/members"    element={<MembersView role={effectiveRole} />} />
               <Route path="/loans"      element={<LoansView />} />
               <Route path="/trust"      element={<TrustScoreView />} />
               <Route path="/statements" element={<StatementsView role={effectiveRole} />} />

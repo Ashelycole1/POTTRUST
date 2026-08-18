@@ -18,6 +18,21 @@ const BreakdownRow = ({ label, value, color }) => (
 export const TrustScoreView = () => {
   const { trustScore } = useApp();
 
+  if (!trustScore) {
+    return (
+      <>
+        <div className="greeting">
+          <p className="hello">Credit standing</p>
+          <p className="name">Trust Score</p>
+        </div>
+        <div className="section" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-dim)' }}>
+          <p style={{ fontSize: 15, fontWeight: 600 }}>No trust score yet.</p>
+          <p style={{ fontSize: 13, marginTop: 8 }}>Your trust score will be calculated after your first contribution.</p>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <div className="greeting">
@@ -47,7 +62,7 @@ export const TrustScoreView = () => {
           <h3>How to improve it</h3>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {trustScore.tips.map((item, idx) => (
+          {trustScore.tips?.length > 0 ? trustScore.tips.map((item, idx) => (
             <div key={idx} style={{
               background: 'var(--surface)', border: '1px solid var(--line)',
               borderRadius: 14, padding: '14px 16px'
@@ -55,14 +70,16 @@ export const TrustScoreView = () => {
               <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 4 }}>{item.tip}</div>
               <div style={{ fontSize: 11.5, color: item.color, fontWeight: 600 }}>{item.impact}</div>
             </div>
-          ))}
+          )) : (
+            <div style={{ color: 'var(--text-faint)', fontSize: 13, textAlign: 'center', padding: '10px 0' }}>Keep up the good work!</div>
+          )}
         </div>
 
         <div className="section-head" style={{ marginTop: 28 }}>
           <h3>Score history</h3>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {trustScore.history.map((item, idx) => (
+          {trustScore.history?.length > 0 ? trustScore.history.map((item, idx) => (
             <div key={idx} style={{
               background: 'var(--surface)', border: '1px solid var(--line)',
               borderRadius: 14, padding: '12px 16px',
@@ -77,7 +94,9 @@ export const TrustScoreView = () => {
                 }}>{item.change}</span>
               </div>
             </div>
-          ))}
+          )) : (
+            <div style={{ color: 'var(--text-faint)', fontSize: 13, textAlign: 'center', padding: '10px 0' }}>No history yet.</div>
+          )}
         </div>
       </div>
     </>
