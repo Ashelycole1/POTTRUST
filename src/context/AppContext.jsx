@@ -156,9 +156,21 @@ export const AppProvider = ({ children, supabaseData = null }) => {
     }));
 
     setGroupPot(supabaseData.groupData?.total_pot || 0);
-    setPendingProofs(supabaseData.pendingProofs || []);
     setActivityLog(supabaseData.auditLogs || []);
     setNotifications(supabaseData.notifications || []);
+    
+    setPendingProofs((supabaseData.pendingProofs || []).map(p => ({
+      id:          p.id,
+      memberName:  `${p.users?.first_name || ''} ${p.users?.last_name || ''}`.trim() || 'Unknown',
+      initials:    `${p.users?.first_name?.[0] || ''}${p.users?.last_name?.[0] || ''}`.toUpperCase() || '?',
+      amount:      p.amount,
+      mode:        p.payment_mode,
+      txnRef:      p.txn_ref,
+      proofUrl:    p.proof_url,
+      notes:       p.notes,
+      submittedAt: p.submitted_at ? new Date(p.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+      status:      p.status,
+    })));
     
     if (supabaseData.myLoan) {
       const sl = supabaseData.myLoan;

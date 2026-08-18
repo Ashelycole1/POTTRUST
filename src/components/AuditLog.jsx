@@ -33,7 +33,13 @@ export const AuditLogItem = ({ color, headerHtml, sub, time }) => (
 export const AuditLog = ({ entries }) => (
   <div style={{ padding: '8px 0' }}>
     {entries.map((e, idx) => (
-      <AuditLogItem key={idx} color={e.c} headerHtml={e.h} sub={e.s} time={e.t} />
+      <AuditLogItem 
+        key={e.id || idx} 
+        color={`var(--${e.color_hint || 'text'})`} 
+        headerHtml={e.headline} 
+        sub={e.detail} 
+        time={new Date(e.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} 
+      />
     ))}
   </div>
 );
