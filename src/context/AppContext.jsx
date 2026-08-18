@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { supabase } from '../lib/supabase';
 
@@ -141,6 +141,101 @@ export const AppProvider = ({ children, supabaseData = null }) => {
         avatarColor: 'var(--coral)',
       }))
   );
+
+  // ── Sync Supabase Data on Load ──────────────────────────────────────────
+  useEffect(() => {
+    if (!supabaseData) return;
+    
+    const myC = supabaseData.contributions?.find(c => c.user_id === supabaseData.userData?.id);
+    setMemberContrib(prev => ({
+      ...prev,
+      paid:        myC?.amount || 0,
+      total:       supabaseData.groupData?.contribution_amount || 0,
+      status:      myC?.status || 'PENDING',
+      lastPayment: myC ? `Paid via ${myC.payment_mode} · ref #${myC.txn_ref}` : 'No payment recorded yet',
+    }));
+
+    setGroupPot(supabaseData.groupData?.total_pot || 0);
+    setPendingProofs(supabaseData.pendingProofs || []);
+    setActivityLog(supabaseData.auditLogs || []);
+    setNotifications(supabaseData.notifications || []);
+    
+    if (supabaseData.myLoan) {
+      const sl = supabaseData.myLoan;
+      setMemberLoan({
+        outstanding:   sl.outstanding,
+        nextRepayment: sl.outstanding > 0
+          ? Math.ceil(sl.outstanding / Math.max((sl.term_months || 1) - ((sl.total_paid / (sl.amount / (sl.term_months || 1))) || 0), 1))
+          : 0,
+        totalPaid:  sl.total_paid  || 0,
+        totalTerm:  sl.amount      || 0,
+      });
+    }
+
+    if (supabaseData.loans) {
+      setLoansList(supabaseData.loans.map(l => ({
+        id:       l.id,
+        name:     `${l.users?.first_name || ''} ${l.users?.last_name || ''}`.trim() || 'Unknown',
+        initials: `${l.users?.first_name?.[0] || ''}${l.users?.last_name?.[0] || ''}`.toUpperCase() || '?',
+        sub:      `UGX ${(l.outstanding || 0).toLocaleString()} outstanding`,
+        status:   l.status,
+        color:    l.status === 'CLEARED' ? 'var(--green)'
+                : l.status === 'AT RISK' ? 'var(--coral)'
+                : 'var(--gold)',
+      })));
+    }
+
+    if (supabaseData.repaySchedule) {
+      setRepaymentSchedule(supabaseData.repaySchedule.map((r, i) => ({
+        id:     r.id,
+        label:  `Instalment ${r.instalment_no || i + 1}`,
+        date:   r.paid_at ? new Date(r.paid_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Pending',
+        amount: r.amount,
+        done:   !!r.paid_at,
+      })));
+    }
+
+    if (supabaseData.trustScore) {
+      setTrustScore({
+        score:             supabaseData.trustScore.score,
+        tier:              supabaseData.trustScore.tier,
+        streak:            0,
+        loanRepayments:    'See loan history',
+        pendingProofs:     (supabaseData.pendingProofs || []).length,
+        finesIssued:       0,
+        lateContributions: 0,
+        history:           [],
+        tips:              [],
+        change:            supabaseData.trustScore.change || 0,
+      });
+    }
+
+    if (supabaseData.loans) {
+      setPendingLoanRequests(
+        supabaseData.loans.filter(l => l.status === 'PENDING').map(l => ({
+          id:          l.id,
+          name:        `${l.users?.first_name || ''} ${l.users?.last_name || ''}`.trim() || 'Unknown',
+          initials:    `${l.users?.first_name?.[0] || ''}${l.users?.last_name?.[0] || ''}`.toUpperCase() || '?',
+          sub:         `UGX ${(l.amount || 0).toLocaleString()} requested · pending vote`,
+          status:      'PENDING',
+          avatarColor: 'var(--gold)',
+        }))
+      );
+    }
+
+    if (supabaseData.contributions) {
+      setPendingFines(
+        supabaseData.contributions.filter(c => c.status === 'OVERDUE').map(c => ({
+          id:          c.id,
+          name:        `${c.users?.first_name || ''} ${c.users?.last_name || ''}`.trim() || 'Unknown',
+          initials:    `${c.users?.first_name?.[0] || ''}${c.users?.last_name?.[0] || ''}`.toUpperCase() || '?',
+          sub:         `${c.cycle_label} · overdue`,
+          status:      'PENDING',
+          avatarColor: 'var(--coral)',
+        }))
+      );
+    }
+  }, [supabaseData]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   const addLogEntry = useCallback(async (entry) => {
