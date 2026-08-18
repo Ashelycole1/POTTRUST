@@ -27,6 +27,66 @@ const MetricCard = ({ icon: Icon, label, value, trend, trendColor }) => (
 
 export const AdminOverview = () => {
   const { displayName } = useApp();
+  const [stats, setStats] = useState({ users: null, groups: null, transactions: null, txnAmount: null });
+  const [activity, setActivity] = useState([]);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setStatsLoading(true);
+
+      // Parallel fetches
+      const [
+        { count: userCount },
+        { count: groupCount },
+        { data: txns },
+      ] = await Promise.all([
+        supabase.from('users').select('*', { count: 'exact', head: true }),
+        supabase.from('groups').select('*', { count: 'exact', head: true }),
+        supabase.from('contributions')
+          .select('amount, submitted_at')
+          .gte('submitted_at', new Date(Date.now() - 30 * 86400000).toISOString()),
+      ]);
+
+      const totalAmount = (txns || []).reduce((s, c) => s + (c.amount || 0), 0);
+
+      setStats({
+        users: userCount ?? 0,
+        groups: groupCount ?? 0,
+        transactions: (txns || []).length,
+        txnAmount: totalAmount,
+      });
+
+      // Build last-14-days activity bars from contributions
+      const days = Array.from({ length: 14 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (13 - i));
+        d.setHours(0, 0, 0, 0);
+        return d;
+      });
+
+      const buckets = days.map(day => {
+        const next = new Date(day); next.setDate(next.getDate() + 1);
+        const count = (txns || []).filter(c => {
+          const t = new Date(c.submitted_at);
+          return t >= day && t < next;
+        }).length;
+        return count;
+      });
+
+      setActivity(buckets);
+      setStatsLoading(false);
+    };
+
+    fetchStats();
+  }, []);
+
+  const maxActivity = Math.max(...activity, 1);
+  const fmtAmount = (n) => n >= 1_000_000
+    ? `UGX ${(n / 1_000_000).toFixed(1)}M`
+    : n >= 1_000 ? `UGX ${(n / 1000).toFixed(0)}K`
+    : `UGX ${n}`;
+
   return (
     <>
       <div className="greeting">
@@ -38,29 +98,93 @@ export const AdminOverview = () => {
       <div style={{
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24
       }}>
-        <MetricCard icon={Users} label="Total Users" value="-" trend="Live tracking..." />
-        <MetricCard icon={Database} label="Active Groups" value="-" trend="Live tracking..." />
-        <MetricCard icon={Activity} label="Transactions" value="-" trend="Processed this month" />
-        <MetricCard icon={ShieldCheck} label="System Health" value="99.9%" trend="All systems operational" />
+        <MetricCard
+          icon={Users}
+          label="Total Users"
+          value={statsLoading ? '…' : stats.users}
+          trend={statsLoading ? '' : `${stats.users} registered accounts`}
+        />
+        <MetricCard
+          icon={Database}
+          label="Active Groups"
+          value={statsLoading ? '…' : stats.groups}
+          trend={statsLoading ? '' : `${stats.groups} SACCO workspaces`}
+        />
+        <MetricCard
+          icon={Activity}
+          label="Transactions (30d)"
+          value={statsLoading ? '…' : stats.transactions}
+          trend={statsLoading ? '' : fmtAmount(stats.txnAmount)}
+        />
+        <MetricCard
+          icon={ShieldCheck}
+          label="System Health"
+          value="99.9%"
+          trend="All systems operational"
+        />
       </div>
 
       <div className="section">
         <div className="section-head">
-          <h3>Platform Activity Pulse</h3>
+          <h3>Contribution Activity — Last 14 Days</h3>
           <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>Live</span>
         </div>
-        
+
         <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--line)', padding: 16 }}>
-          <div style={{ height: 180, display: 'flex', alignItems: 'flex-end', gap: 8, paddingBottom: 8, borderBottom: '1px solid var(--line)' }}>
-             {[30, 45, 20, 60, 80, 50, 90, 70, 40, 65, 85, 100, 75, 55].map((h, i) => (
-                <div key={i} style={{ flex: 1, background: 'var(--green-deep)', height: `${h}%`, borderRadius: '4px 4px 0 0', position: 'relative' }}>
-                  <div style={{ position: 'absolute', bottom: 0, width: '100%', height: '100%', background: 'linear-gradient(to top, var(--green) 0%, transparent 100%)', opacity: 0.3 }} />
-                </div>
-             ))}
+          {statsLoading ? (
+            <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', fontSize: 13 }}>
+              Loading activity…
+            </div>
+          ) : activity.every(v => v === 0) ? (
+            <div style={{ height: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', fontSize: 13, gap: 8 }}>
+              <Activity size={32} opacity={0.3} />
+              <span>No contribution activity in the last 14 days</span>
+            </div>
+          ) : (
+            <>
+              <div style={{ height: 180, display: 'flex', alignItems: 'flex-end', gap: 8, paddingBottom: 8, borderBottom: '1px solid var(--line)' }}>
+                {activity.map((count, i) => {
+                  const h = Math.max((count / maxActivity) * 100, count > 0 ? 8 : 2);
+                  return (
+                    <div key={i} title={`${count} contribution${count !== 1 ? 's' : ''}`}
+                      style={{ flex: 1, background: count > 0 ? 'var(--green-deep)' : 'var(--line)', height: `${h}%`, borderRadius: '4px 4px 0 0', position: 'relative', cursor: 'default' }}>
+                      {count > 0 && (
+                        <div style={{ position: 'absolute', bottom: 0, width: '100%', height: '100%', background: 'linear-gradient(to top, var(--green) 0%, transparent 100%)', opacity: 0.35, borderRadius: '4px 4px 0 0' }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, fontSize: 11, color: 'var(--text-faint)', fontWeight: 600 }}>
+                <span>14 days ago</span>
+                <span>Today</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Recent Breakdown */}
+        <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Avg per group</div>
+            <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'IBM Plex Mono' }}>
+              {statsLoading ? '…' : stats.groups > 0 ? Math.round(stats.transactions / stats.groups) : 0}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>transactions / group</div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, fontSize: 11, color: 'var(--text-faint)', fontWeight: 600 }}>
-            <span>14 days ago</span>
-            <span>Today</span>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Users per group</div>
+            <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'IBM Plex Mono' }}>
+              {statsLoading ? '…' : stats.groups > 0 ? (stats.users / stats.groups).toFixed(1) : stats.users}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>avg members</div>
+          </div>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Volume (30d)</div>
+            <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'IBM Plex Mono' }}>
+              {statsLoading ? '…' : fmtAmount(stats.txnAmount)}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>total processed</div>
           </div>
         </div>
       </div>
